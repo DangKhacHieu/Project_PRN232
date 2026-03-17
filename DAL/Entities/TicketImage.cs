@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DAL.Entities.Support_System
+namespace DAL.Entities
 {
     [Table("ticket_images")]
     public class TicketImage

@@ -5,9 +5,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DAL.Entities.Infrastructure;
 
-namespace DAL.Entities.Finance_Billing
+namespace DAL.Entities
 {
     [Table("utility_readings")]
     public class UtilityReading

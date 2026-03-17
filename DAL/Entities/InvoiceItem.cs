@@ -5,9 +5,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DAL.Entities.Finance_Billing;
 
-namespace MarketManagement_DAL.Entities.Fee_Invoice_Items
+namespace DAL.Entities
 {
     [Table("invoice_items")]
     public class InvoiceItem

@@ -5,10 +5,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DAL.Entities.Product_Management;
-using DAL.Entities.System_Auth;
 
-namespace DAL.Entities.Vendor_Contract
+namespace DAL.Entities
 {
     [Table("vendor_profiles")]
     public class VendorProfile

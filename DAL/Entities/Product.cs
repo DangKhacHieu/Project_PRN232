@@ -5,9 +5,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DAL.Entities.Vendor_Contract;
 
-namespace DAL.Entities.Product_Management
+namespace DAL.Entities
 {
     [Table("products")]
     public class Product

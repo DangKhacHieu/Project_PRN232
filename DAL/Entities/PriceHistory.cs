@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DAL.Entities.Product_Management
+namespace DAL.Entities
 {
     [Table("price_history")]
     public class PriceHistory

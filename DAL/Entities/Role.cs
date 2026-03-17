@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DAL.Entities.System_Auth
+namespace DAL.Entities
 {
     [Table("roles")]
     public class Role

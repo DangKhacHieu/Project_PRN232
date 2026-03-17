@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MarketManagement_DAL.Entities.Fee_Invoice_Items
+namespace DAL.Entities
 {
     [Table("fee_config")]
     public class FeeConfig
@@ -20,7 +20,7 @@ namespace MarketManagement_DAL.Entities.Fee_Invoice_Items
         public int FeeTypeId { get; set; }
 
         [Required]
-        [Column("unit_price")]
+        [Column("unit_price", TypeName = "decimal(14, 2)")]
         public decimal UnitPrice { get; set; }
 
         [Required]

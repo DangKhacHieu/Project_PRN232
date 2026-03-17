@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DAL.Data;
-using DAL.Entities.Vendor_Contract;
+using DAL.Entities;
 
 namespace API_BE.Controllers
 {

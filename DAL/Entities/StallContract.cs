@@ -5,10 +5,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DAL.Entities.Finance_Billing;
-using DAL.Entities.Infrastructure;
 
-namespace DAL.Entities.Vendor_Contract
+namespace DAL.Entities
 {
     [Table("stall_contracts")]
     public class StallContract

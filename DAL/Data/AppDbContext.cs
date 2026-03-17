@@ -1,11 +1,4 @@
-﻿using DAL.Entities.Finance_Billing;
-using DAL.Entities.Infrastructure;
-using DAL.Entities.Product_Management;
-using DAL.Entities.Support_System;
-using DAL.Entities.System_Auth;
-using DAL.Entities.Vendor_Contract;
-using MarketManagement_DAL.Entities; // Namespace chứa các models của bạn
-using MarketManagement_DAL.Entities.Fee_Invoice_Items;
+﻿using DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DAL.Data
@@ -49,14 +42,67 @@ namespace DAL.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Ràng buộc Unique
+
             modelBuilder.Entity<Invoice>()
                 .HasIndex(i => new { i.ContractId, i.Month, i.Year })
-                .IsUnique();
+                .IsUnique()
+                .HasDatabaseName("UQ_invoice");
 
             modelBuilder.Entity<UtilityReading>()
                 .HasIndex(u => new { u.StallId, u.Month, u.Year })
-                .IsUnique();
+                .IsUnique()
+                .HasDatabaseName("UQ_reading");
+
+
+            modelBuilder.Entity<Stall>()
+                .ToTable(t => t.HasCheckConstraint("CK_Stall_Status", "status IN ('VACANT','RENTED','MAINTENANCE','DISPUTE')"));
+
+            modelBuilder.Entity<StallContract>()
+                .ToTable(t => t.HasCheckConstraint("CK_Contract_Status", "status IN ('ACTIVE','EXPIRED','TERMINATED')"));
+
+            modelBuilder.Entity<Invoice>()
+                .ToTable(t => {
+                    t.HasCheckConstraint("CK_Invoice_Status", "status IN ('UNPAID','PAID','OVERDUE')");
+                    t.HasCheckConstraint("CK_Invoice_Month", "month BETWEEN 1 AND 12");
+                });
+
+            modelBuilder.Entity<Payment>()
+                .ToTable(t => {
+                    t.HasCheckConstraint("CK_Payment_Method", "payment_method IN ('QR','CASH','BANK_TRANSFER')");
+                    t.HasCheckConstraint("CK_Payment_Status", "status IN ('PENDING','SUCCESS','FAILED','REFUNDED','CANCELLED')");
+                });
+
+            modelBuilder.Entity<UtilityReading>()
+                .ToTable(t => t.HasCheckConstraint("CK_Utility_Month", "month BETWEEN 1 AND 12"));
+
+            modelBuilder.Entity<SupportTicket>()
+                .ToTable(t => t.HasCheckConstraint("CK_Ticket_Status", "status IN ('PENDING','PROCESSING','DONE')"));
+
+
+            // --- Cấu hình DEFAULT GETDATE() ---
+            modelBuilder.Entity<User>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<Market>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<Zone>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<Stall>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<VendorProfile>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<StallContract>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<ContractHistory>().Property(e => e.ActionDate).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<UtilityReading>().Property(e => e.RecordedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<Invoice>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<Payment>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<Product>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<PriceHistory>().Property(e => e.EffectiveTime).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<SupportTicket>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+
+            // --- Cấu hình DEFAULT TEXT / BOOLEAN ---
+            modelBuilder.Entity<User>().Property(e => e.IsActive).HasDefaultValue(true);
+            modelBuilder.Entity<Product>().Property(e => e.IsActive).HasDefaultValue(true);
+
+            modelBuilder.Entity<Stall>().Property(e => e.Status).HasDefaultValue("VACANT");
+            modelBuilder.Entity<StallContract>().Property(e => e.Status).HasDefaultValue("ACTIVE");
+            modelBuilder.Entity<Invoice>().Property(e => e.Status).HasDefaultValue("UNPAID");
+            modelBuilder.Entity<Payment>().Property(e => e.Status).HasDefaultValue("PENDING");
+            modelBuilder.Entity<SupportTicket>().Property(e => e.Status).HasDefaultValue("PENDING");
         }
     }
 }

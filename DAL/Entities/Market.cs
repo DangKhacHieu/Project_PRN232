@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DAL.Entities.Infrastructure
+namespace DAL.Entities
 {
     [Table("markets")]
     public class Market

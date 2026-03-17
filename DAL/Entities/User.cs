@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using DAL.Entities.Vendor_Contract;
 
-namespace DAL.Entities.System_Auth
+namespace DAL.Entities
 {
     [Table("users")]
     public class User

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MarketManagement_DAL.Entities.Fee_Invoice_Items
+namespace DAL.Entities
 {
     [Table("fee_types")]
     public class FeeType
@@ -16,8 +16,7 @@ namespace MarketManagement_DAL.Entities.Fee_Invoice_Items
         public int FeeTypeId { get; set; }
 
         [Required]
-        [MaxLength(50)]
-        [Column("code")]
+        [Column("code", TypeName = "varchar(50)")]
         public string Code { get; set; } = null!;
 
         [Required]

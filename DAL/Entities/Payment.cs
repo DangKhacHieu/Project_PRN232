@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DAL.Entities.Finance_Billing
+namespace DAL.Entities
 {
     [Table("payments")]
     public class Payment
