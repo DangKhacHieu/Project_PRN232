@@ -1,0 +1,25 @@
+## --- .NET Specific (Backend & Solutions) ---
+# Loại bỏ các thư mục build và cache của Visual Studio
+[Dd]ebug/
+[Release]/
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## --- General Frontend (Non-Node) ---
+# Nếu ông dùng các công cụ live-server hoặc các file tạm của trình soạn thảo
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+.vscode/
+
+## --- Database (Nếu có file DB trong project) ---
+*.mdf
+*.ldf
+*.sdf
