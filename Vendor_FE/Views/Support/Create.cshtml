@@ -1,0 +1,65 @@
+﻿@{
+    ViewData["Title"] = "Báo cáo sự cố mới";
+}
+
+<div class="container mt-4">
+    <h2><i class="fas fa-exclamation-triangle text-warning"></i> Gửi Yêu Cầu Xử Lý Sự Cố</h2>
+    <hr />
+    <div class="row">
+        <div class="col-md-8">
+            <form id="createTicketForm" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tiêu đề sự cố <span class="text-danger">*</span></label>
+                    <input type="text" name="Title" class="form-control" required maxlength="200" placeholder="VD: Hư hỏng đường ống nước tại sạp A12" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mô tả chi tiết <span class="text-danger">*</span></label>
+                    <textarea name="Description" class="form-control" rows="5" required placeholder="Vui lòng mô tả rõ tình trạng để Ban quản lý chuẩn bị vật tư..."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Đính kèm hình ảnh hiện trường (Tối đa 3 ảnh)</label>
+                    <input type="file" name="Images" class="form-control" accept="image/*" multiple />
+                </div>
+
+                <button type="submit" class="btn btn-success" id="btnSubmit">
+                    <i class="fas fa-paper-plane"></i> Gửi Báo Cáo
+                </button>
+                <a href="/Support" class="btn btn-secondary">Hủy</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#createTicketForm').on('submit', function (e) {
+            e.preventDefault(); // Ngăn form tự động reload trang
+
+            var token = sessionStorage.getItem('vendorToken');
+
+            // Tự động gom toàn bộ dữ liệu (Text + List Files) vào FormData
+            var formData = new FormData(this);
+
+            $('#btnSubmit').html('<span class="spinner-border spinner-border-sm"></span> Đang gửi...').prop('disabled', true);
+
+            $.ajax({
+                url: 'https://localhost:7169/api/SupportTickets',
+                type: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                data: formData,
+                contentType: false, // BẮT BUỘC: Không set contentType để browser tự config boundary cho file
+                processData: false, // BẮT BUỘC: Không để jQuery chuyển formData thành chuỗi string
+                success: function (res) {
+                    alert(res.message);
+                    window.location.href = '/Support'; // Chuyển hướng về trang danh sách
+                },
+                error: function (err) {
+                    alert('Có lỗi xảy ra hoặc dữ liệu không hợp lệ!');
+                    $('#btnSubmit').html('<i class="fas fa-paper-plane"></i> Gửi Báo Cáo').prop('disabled', false);
+                }
+            });
+        });
+    </script>
+}

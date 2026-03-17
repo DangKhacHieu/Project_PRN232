@@ -1,0 +1,45 @@
+﻿@{
+    ViewData["Title"] = "Quản lý Hóa đơn";
+}
+
+<div class="container mt-4">
+    <h2>Lịch sử Hóa đơn điện/nước</h2>
+    <table class="table table-bordered table-striped mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>Mã HĐ</th>
+                <th>Kỳ Thu Phí</th>
+                <th>Tổng tiền (VNĐ)</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="invoiceTableBody">
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Thanh toán qua VietQR</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Vui lòng mở ứng dụng ngân hàng và quét mã QR dưới đây:</p>
+                <img id="qrImage" src="" alt="Mã QR Thanh toán" class="img-fluid" style="max-width: 300px; display: none;" />
+                <div id="qrLoading" class="spinner-border text-primary mt-3" role="status">
+                    <span class="visually-hidden">Đang tải...</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/invoice.js" asp-append-version="true"></script>
+}

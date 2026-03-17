@@ -1,0 +1,63 @@
+﻿@{
+    ViewData["Title"] = "Theo dõi Sự cố";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Lịch sử Báo cáo Sự cố</h2>
+        <a href="/Support/Create" class="btn btn-primary"><i class="fas fa-plus"></i> Báo cáo mới</a>
+    </div>
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Mã YC</th>
+                <th>Tiêu đề</th>
+                <th>Ngày gửi</th>
+                <th>Trạng thái</th>
+                <th>Hình ảnh</th>
+            </tr>
+        </thead>
+        <tbody id="ticketTableBody">
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var token = sessionStorage.getItem('vendorToken');
+            $.ajax({
+                url: 'https://localhost:7169/api/SupportTickets', // Thay bằng Port thực tế
+                type: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token },
+                success: function (data) {
+                    var html = '';
+                    $.each(data, function (index, item) {
+                        html += '<tr>';
+                        html += `<td>#${item.ticketId}</td>`;
+                        html += `<td><strong>${item.title}</strong><br><small class="text-muted">${item.description}</small></td>`;
+                        html += `<td>${new Date(item.createdAt).toLocaleDateString()}</td>`;
+
+                        // Xử lý Badge trạng thái
+                        if (item.status === 'PENDING') html += '<td><span class="badge bg-secondary">Chờ tiếp nhận</span></td>';
+                        else if (item.status === 'PROCESSING') html += '<td><span class="badge bg-warning text-dark">Đang xử lý</span></td>';
+                        else if (item.status === 'DONE') html += '<td><span class="badge bg-success">Đã hoàn thành</span></td>';
+
+                        // Xử lý hiển thị ảnh
+                        html += '<td>';
+                        if(item.imageUrls && item.imageUrls.length > 0) {
+                            $.each(item.imageUrls, function(i, url){
+                                html += `<a href="https://localhost:5001${url}" target="_blank"><img src="https://localhost:7169{url}" width="50" height="50" class="me-1 img-thumbnail"></a>`;
+                            });
+                        } else {
+                            html += '<span class="text-muted">Không có</span>';
+                        }
+                        html += '</td></tr>';
+                    });
+                    $('#ticketTableBody').html(html);
+                }
+            });
+        });
+    </script>
+}

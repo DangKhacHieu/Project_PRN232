@@ -1,20 +1,42 @@
-using DAL.Data;
-using Microsoft.EntityFrameworkCore;
 using System;
+using BLL.Services.Implementations;
+using BLL.Services.Interfaces;
+using DAL.Data;
+using DAL.Repositories.Implementations;
+using DAL.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowVendorFE",
+        policy =>
+        {
+            policy.WithOrigins("https://localhost:7280", "http://localhost:5091")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 
 var connectionString = builder.Configuration.GetConnectionString("AppDbContext");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
+builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 var app = builder.Build();
 
 
@@ -27,6 +49,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseCors("AllowVendorFE");
 
 app.UseAuthorization();
 

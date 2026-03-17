@@ -2,107 +2,102 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BLL.DTOs;
+using BLL.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using DAL.Data;
-using DAL.Entities;
 
 namespace API_BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    // CHỈ CÓ ROLE "Vendor" MỚI ĐƯỢC GỌI API NÀY
+    //[Authorize(Roles = "Vendor")]
     public class ProductsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IProductService _productService;
 
-        public ProductsController(AppDbContext context)
+        public ProductsController(IProductService productService)
         {
-            _context = context;
+            _productService = productService;
         }
 
-        // GET: api/Products
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        [HttpPost]
+        // Bắt buộc dùng [FromForm] vì có gửi kèm File ảnh
+        public async Task<IActionResult> CreateProduct([FromForm] ProductCreateRequestDTO request)
         {
-            return await _context.Products.ToListAsync();
-        }
+            // 1. Kiểm tra dữ liệu đầu vào (Validation)
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        // GET: api/Products/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
+            // 2. TRÍCH XUẤT VENDOR ID TỪ JWT TOKEN
+            int vendorId = GetVendorIdFromToken(); 
+            if (vendorId <= 0) return Unauthorized();
 
-            if (product == null)
-            {
-                return NotFound();
-            }
-
-            return product;
-        }
-
-        // PUT: api/Products/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduct(int id, Product product)
-        {
-            if (id != product.ProductId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(product).State = EntityState.Modified;
-
+            // 3. Gọi Service xử lý
             try
             {
-                await _context.SaveChangesAsync();
+                int productId = await _productService.CreateProductAsync(vendorId, request);
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Thêm sản phẩm thành công!",
+                    ProductId = productId
+                });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!ProductExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                // Bắt lỗi server và trả về status 500
+                return StatusCode(500, new { Success = false, Message = $"Lỗi hệ thống: {ex.Message}" });
             }
-
-            return NoContent();
         }
 
-        // POST: api/Products
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
+        [HttpGet]
+        public async Task<IActionResult> GetMyProducts()
         {
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+            int vendorId = GetVendorIdFromToken(); // Viết 1 hàm private dùng chung để lấy ID cho gọn
+            if (vendorId <= 0) return Unauthorized();
 
-            return CreatedAtAction("GetProduct", new { id = product.ProductId }, product);
+
+            var products = await _productService.GetProductsByVendorAsync(vendorId);
+            return Ok(products);
         }
 
-        // DELETE: api/Products/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] ProductUpdateRequestDTO request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            int vendorId = GetVendorIdFromToken();
+            if (vendorId <= 0) return Unauthorized();
+
+            var isSuccess = await _productService.UpdateProductAsync(vendorId, id, request);
+            if (!isSuccess) return NotFound(new { Message = "Không tìm thấy sản phẩm hoặc bạn không có quyền sửa." });
+
+            return Ok(new { Success = true, Message = "Cập nhật thành công!" });
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
-            {
-                return NotFound();
-            }
+            int vendorId = GetVendorIdFromToken();
+            if (vendorId <= 0) return Unauthorized();
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            var isSuccess = await _productService.DeleteProductAsync(vendorId, id);
+            if (!isSuccess) return NotFound(new { Message = "Không tìm thấy sản phẩm." });
 
-            return NoContent();
+            return Ok(new { Success = true, Message = "Đã gỡ sản phẩm thành công!" });
         }
 
-        private bool ProductExists(int id)
+        // Hàm helper dùng chung trong Controller này
+        private int GetVendorIdFromToken()
         {
-            return _context.Products.Any(e => e.ProductId == id);
+            //var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
+            //return claim != null ? int.Parse(claim.Value) : 0;
+            return 5;
         }
     }
 }
