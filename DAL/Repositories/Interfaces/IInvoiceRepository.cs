@@ -12,5 +12,7 @@ namespace DAL.Repositories.Interfaces
         Task<IEnumerable<Invoice>> GetInvoicesByVendorIdAsync(int vendorId);
         Task<Invoice?> GetInvoiceByIdAndVendorIdAsync(int invoiceId, int vendorId);
         Task UpdateInvoiceAsync(Invoice invoice);
+
+        Task<Invoice?> GetInvoiceDetailForExportAsync(int invoiceId, int vendorId);
     }
 }

@@ -40,5 +40,18 @@ namespace DAL.Repositories.Implementations
             _context.Invoices.Update(invoice);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<Invoice?> GetInvoiceDetailForExportAsync(int invoiceId, int vendorId)
+        {
+            return await _context.Invoices
+                .Include(i => i.Contract)
+                    .ThenInclude(c => c.Vendor) // 1. Lấy thông tin VendorProfile
+                .Include(i => i.Contract)
+                    .ThenInclude(c => c.Stall)  // Lấy thông tin Sạp
+                .Include(i => i.InvoiceItems)
+                    .ThenInclude(it => it.FeeConfig) // Lấy Cấu hình phí
+                    .ThenInclude(it => it.FeeType)   // Lấy Tên loại phí
+                .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId && i.Contract != null && i.Contract.VendorId == vendorId);
+        }
     }
 }

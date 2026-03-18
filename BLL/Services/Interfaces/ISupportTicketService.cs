@@ -11,5 +11,6 @@ namespace BLL.Services.Interfaces
     {
         Task<IEnumerable<TicketResponseDTO>> GetTicketsByVendorIdAsync(int vendorId);
         Task<int> CreateTicketAsync(int vendorId, TicketCreateRequestDTO request);
+        Task<bool> ConfirmTicketAsync(int ticketId, int vendorId);
     }
 }

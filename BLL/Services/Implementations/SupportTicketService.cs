@@ -46,7 +46,7 @@ namespace BLL.Services.Implementations
                 VendorId = vendorId,
                 Title = request.Title,
                 Description = request.Description,
-                Status = "PENDING", // Trạng thái mặc định chờ xử lý
+                Status = TicketStatus.Pending,
                 CreatedAt = DateTime.Now,
                 TicketImages = new List<TicketImage>()
             };
@@ -54,7 +54,9 @@ namespace BLL.Services.Implementations
             // 2. Xử lý lưu danh sách file ảnh nếu có
             if (request.Images != null && request.Images.Any())
             {
-                string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "tickets");
+                string rootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+
+                string uploadsFolder = Path.Combine(rootPath, "uploads", "tickets");
                 if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
                 foreach (var file in request.Images)
@@ -77,10 +79,26 @@ namespace BLL.Services.Implementations
                     }
                 }
             }
-
             // 3. Lưu vào Database
             await _ticketRepo.CreateAsync(ticket);
             return ticket.TicketId;
+        }
+
+
+        public async Task<bool> ConfirmTicketAsync(int ticketId, int vendorId)
+        {
+            var ticket = await _ticketRepo.GetByIdAsync(ticketId);
+
+            if (ticket == null) return false;
+
+            if (ticket.VendorId != vendorId) return false;
+
+            if (ticket.Status != TicketStatus.Resolved) return false;
+
+            ticket.Status = TicketStatus.Closed;
+            await _ticketRepo.UpdateAsync(ticket);
+
+            return true;
         }
     }
 }

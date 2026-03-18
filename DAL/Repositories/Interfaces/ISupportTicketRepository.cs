@@ -11,5 +11,7 @@ namespace DAL.Repositories.Interfaces
     {
         Task<IEnumerable<SupportTicket>> GetByVendorIdAsync(int vendorId);
         Task CreateAsync(SupportTicket ticket);
+        Task<SupportTicket> GetByIdAsync(int ticketId);
+        Task UpdateAsync(SupportTicket ticket);
     }
 }

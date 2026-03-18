@@ -11,5 +11,6 @@ namespace BLL.Services.Interfaces
     {
         Task<IEnumerable<InvoiceResponseDTO>> GetInvoicesByVendorIdAsync(int vendorId);
         Task<string?> GenerateVietQRUrlAsync(int vendorId, int invoiceId);
+        Task<InvoiceDetailExportDTO?> GetInvoiceDetailAsync(int vendorId, int invoiceId);
     }
 }

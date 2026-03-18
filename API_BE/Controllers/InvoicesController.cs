@@ -44,37 +44,18 @@ namespace API_BE.Controllers
             return Ok(new { QrUrl = qrUrl });
         }
 
-        // 3. XUẤT FILE PDF BIÊN LAI
-        [HttpGet("{id}/export-pdf")]
-        public async Task<IActionResult> ExportInvoicePdf(int id)
+
+        // 3. LẤY HÓA ĐƠN THANH TOÁN
+        [HttpGet("{id}/details")]
+        public async Task<IActionResult> GetInvoiceDetails(int id)
         {
             int vendorId = GetVendorIdFromToken();
-            // Lấy thông tin hóa đơn (Bạn có thể viết thêm hàm GetInvoiceDetail trong Service)
-            // Ở đây tôi giả lập data để render PDF
+            if (vendorId <= 0) return Unauthorized();
 
-            using (var memoryStream = new MemoryStream())
-            {
-                // Khởi tạo Document của iText7
-                PdfWriter writer = new PdfWriter(memoryStream);
-                PdfDocument pdf = new PdfDocument(writer);
-                Document document = new Document(pdf);
+            var details = await _invoiceService.GetInvoiceDetailAsync(vendorId, id);
+            if (details == null) return NotFound(new { Message = "Không tìm thấy dữ liệu hóa đơn." });
 
-                // Thêm nội dung vào PDF
-                document.Add(new Paragraph("BIEN LAI THANH TOAN DIEN NUOC")
-                    .SetTextAlignment(TextAlignment.CENTER)
-                    .SetFontSize(20));
-
-                document.Add(new Paragraph($"Ma Hoa Don: #{id}"));
-                document.Add(new Paragraph($"Ngay xuat: {System.DateTime.Now:dd/MM/yyyy}"));
-                document.Add(new Paragraph("--------------------------------------------------"));
-                document.Add(new Paragraph("Trang thai: DA THANH TOAN"));
-                // ... Thêm các thông tin khác ...
-
-                document.Close();
-
-                byte[] fileBytes = memoryStream.ToArray();
-                return File(fileBytes, "application/pdf", $"BienLai_{id}.pdf");
-            }
+            return Ok(details);
         }
 
         private int GetVendorIdFromToken()

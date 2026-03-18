@@ -33,5 +33,17 @@ namespace DAL.Repositories.Implementations
             await _context.SupportTickets.AddAsync(ticket);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<SupportTicket?> GetByIdAsync(int ticketId)
+        {
+            return await _context.SupportTickets
+                .Include(t => t.TicketImages)
+                .FirstOrDefaultAsync(t => t.TicketId == ticketId);
+        }
+        public async Task UpdateAsync(SupportTicket ticket)
+        {
+            _context.SupportTickets.Update(ticket);
+            await _context.SaveChangesAsync();
+        }
     }
 }

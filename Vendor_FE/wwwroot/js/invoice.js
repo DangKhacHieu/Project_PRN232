@@ -80,7 +80,8 @@ function showPaymentQR(invoiceId) {
 function downloadReceipt(invoiceId) {
     var token = sessionStorage.getItem('vendorToken');
 
-    fetch(`${API_BASE_URL}/${invoiceId}/export-pdf`, {
+    fetch(`/Invoice/ExportPdf?id=${invoiceId}`, {
+        method: 'GET',
         headers: { 'Authorization': 'Bearer ' + token }
     })
         .then(res => {

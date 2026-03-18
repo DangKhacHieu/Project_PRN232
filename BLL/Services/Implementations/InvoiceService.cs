@@ -32,6 +32,32 @@ namespace BLL.Services.Implementations
             });
         }
 
+        public async Task<InvoiceDetailExportDTO?> GetInvoiceDetailAsync(int vendorId, int invoiceId)
+        {
+            var invoice = await _invoiceRepo.GetInvoiceDetailForExportAsync(invoiceId, vendorId);
+            if (invoice == null) return null;
+
+            return new InvoiceDetailExportDTO
+            {
+                InvoiceId = invoice.InvoiceId,
+                // Tuỳ vào entity bạn mapping mà có thể là FullName hoặc VendorName
+                BusinessName = invoice.Contract?.Vendor?.BusinessName ?? "Khách hàng",
+                StallCode = invoice.Contract?.Stall?.StallCode ?? "Chưa cập nhật",
+                Month = invoice.Month,
+                Year = invoice.Year,
+                TotalAmount = invoice.TotalAmount ?? 0,
+                Status = invoice.Status,
+                Items = invoice.InvoiceItems.Select(item => new InvoiceItemExportDTO
+                {
+                    FeeName = item.FeeConfig?.FeeType?.Name ?? "Phí dịch vụ",
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    Amount = item.Amount ?? 0
+                }).ToList()
+            };
+        }
+
+
         public async Task<string?> GenerateVietQRUrlAsync(int vendorId, int invoiceId)
         {
             var invoice = await _invoiceRepo.GetInvoiceByIdAndVendorIdAsync(invoiceId, vendorId);
