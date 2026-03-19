@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -21,6 +21,8 @@ namespace BLL.DTOs
 
         // Cho phép upload ảnh mới, nếu null tức là giữ nguyên ảnh cũ
         public IFormFile? NewImage { get; set; }
+
+        public decimal Price { get; set; }
 
         public bool IsActive { get; set; }
     }

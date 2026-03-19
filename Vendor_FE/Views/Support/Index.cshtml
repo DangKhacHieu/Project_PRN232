@@ -1,63 +1,91 @@
-﻿@{
+@model List<Vendor_FE.Models.SupportTicketResponseDTO>
+@{
     ViewData["Title"] = "Theo dõi Sự cố";
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Lịch sử Báo cáo Sự cố</h2>
-        <a href="/Support/Create" class="btn btn-primary"><i class="fas fa-plus"></i> Báo cáo mới</a>
+<div class="container-fluid py-4 max-w-1000">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="fa-solid fa-headset me-2"></i>Lịch sử Báo cáo Sự cố
+        </h2>
+        <a href="/Support/Create" class="btn btn-primary px-4 shadow-sm rounded-pill hover-lift">
+            <i class="fa-solid fa-plus me-2"></i>Báo cáo Sự cố Mới
+        </a>
     </div>
 
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>Mã YC</th>
-                <th>Tiêu đề</th>
-                <th>Ngày gửi</th>
-                <th>Trạng thái</th>
-                <th>Hình ảnh</th>
-            </tr>
-        </thead>
-        <tbody id="ticketTableBody">
-        </tbody>
-    </table>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card shadow border-0 rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center">
+                <thead class="bg-light text-secondary">
+                    <tr>
+                        <th class="py-3 px-4 text-start">Mã YC</th>
+                        <th class="py-3 text-start">Tiêu đề & Mô tả</th>
+                        <th class="py-3">Ngày gửi</th>
+                        <th class="py-3">Trạng thái</th>
+                        <th class="py-3 px-4">Hình ảnh đính kèm</th>
+                    </tr>
+                </thead>
+                <tbody id="ticketTableBody">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <tr><td colspan="5" class="py-4 text-center text-muted">Không có dữ liệu sự cố.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>#@item.TicketId</td>
+                                <td><strong>@item.Title</strong><br><small class="text-muted">@item.Description</small></td>
+                                <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (item.Status == "PENDING")
+                                    {
+                                        <span class="badge bg-secondary">Chờ tiếp nhận</span>
+                                    }
+                                    else if (item.Status == "PROCESSING")
+                                    {
+                                        <span class="badge bg-warning text-dark">Đang xử lý</span>
+                                    }
+                                    else if (item.Status == "DONE")
+                                    {
+                                        <span class="badge bg-success">Đã hoàn thành</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.ImageUrls != null && item.ImageUrls.Any())
+                                    {
+                                        foreach (var url in item.ImageUrls)
+                                        {
+                                            <a href="@url" target="_blank"><img src="@url" width="50" height="50" class="me-1 img-thumbnail border rounded"></a>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Không có</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-@section Scripts {
-    <script>
-        $(document).ready(function () {
-            var token = sessionStorage.getItem('vendorToken');
-            $.ajax({
-                url: 'https://localhost:7169/api/SupportTickets', // Thay bằng Port thực tế
-                type: 'GET',
-                headers: { 'Authorization': 'Bearer ' + token },
-                success: function (data) {
-                    var html = '';
-                    $.each(data, function (index, item) {
-                        html += '<tr>';
-                        html += `<td>#${item.ticketId}</td>`;
-                        html += `<td><strong>${item.title}</strong><br><small class="text-muted">${item.description}</small></td>`;
-                        html += `<td>${new Date(item.createdAt).toLocaleDateString()}</td>`;
-
-                        // Xử lý Badge trạng thái
-                        if (item.status === 'PENDING') html += '<td><span class="badge bg-secondary">Chờ tiếp nhận</span></td>';
-                        else if (item.status === 'PROCESSING') html += '<td><span class="badge bg-warning text-dark">Đang xử lý</span></td>';
-                        else if (item.status === 'DONE') html += '<td><span class="badge bg-success">Đã hoàn thành</span></td>';
-
-                        // Xử lý hiển thị ảnh
-                        html += '<td>';
-                        if(item.imageUrls && item.imageUrls.length > 0) {
-                            $.each(item.imageUrls, function(i, url){
-                                html += `<a href="https://localhost:5001${url}" target="_blank"><img src="https://localhost:7169{url}" width="50" height="50" class="me-1 img-thumbnail"></a>`;
-                            });
-                        } else {
-                            html += '<span class="text-muted">Không có</span>';
-                        }
-                        html += '</td></tr>';
-                    });
-                    $('#ticketTableBody').html(html);
-                }
-            });
-        });
-    </script>
-}
+<style>
+    .max-w-1000 { max-width: 1000px; margin: 0 auto; }
+    .table-hover tbody tr:hover { background-color: #f8f9fa; }
+    .hover-lift { transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+</style>

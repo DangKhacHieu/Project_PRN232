@@ -1,0 +1,134 @@
+@model Vendor_FE.Models.ProductCreateRequestDTO
+@{
+    ViewData["Title"] = "Thêm Sản Phẩm Mới";
+}
+
+<div class="container-fluid py-4 max-w-1000">
+    <div class="d-flex align-items-center mb-4">
+        <a href="/Products/Index" class="btn btn-light rounded-circle shadow-sm me-3" style="width: 40px; height: 40px; padding: 7px;">
+            <i class="fa-solid fa-arrow-left text-muted"></i>
+        </a>
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="fa-solid fa-plus-circle me-2"></i>Thêm Sản Phẩm Mới
+        </h2>
+    </div>
+
+    <div class="card shadow border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger">
+                    <div asp-validation-summary="All"></div>
+                </div>
+            }
+            <form method="post" action="/Products/Create" enctype="multipart/form-data">
+                <div class="row">
+                    <!-- Right Column: Image Upload (Displayed on mobile too) -->
+                    <div class="col-12 col-md-4 mb-4 mb-md-0 order-md-2">
+                        <label class="form-label fw-bold"><i class="fa-solid fa-camera me-2"></i>Ảnh Sản Phẩm</label>
+                        <div class="card border-2 border-dashed rounded-4 bg-light text-center" style="height: 250px; cursor: pointer;" id="imageUploadArea">
+                            <div class="card-body d-flex flex-column justify-content-center align-items-center" id="uploadPlaceholder">
+                                <i class="fa-solid fa-cloud-arrow-up fa-3x text-primary mb-3"></i>
+                                <p class="text-muted mb-0">Kéo thả ảnh vào đây<br>hoặc click để chọn</p>
+                            </div>
+                            <img id="imagePreview" src="#" class="d-none w-100 h-100 object-fit-cover rounded-4" alt="Preview">
+                        </div>
+                        <input type="file" id="productImage" name="Image" class="d-none" accept="image/*">
+                        <div class="text-center mt-3 d-none" id="removeImageBtn">
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fa-solid fa-trash me-1"></i>Xoá Ảnh</button>
+                        </div>
+                    </div>
+
+                    <!-- Left Column: Product Details -->
+                    <div class="col-12 col-md-8 order-md-1 pe-md-5">
+                        <div class="mb-4">
+                            <label for="productName" class="form-label fw-bold"><i class="fa-solid fa-box me-2"></i>Tên Sản Phẩm <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg rounded-3" id="productName" name="ProductName" placeholder="Ví dụ: Áo Sơ Mi Nam Cao Cấp" required>
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label for="categoryId" class="form-label fw-bold"><i class="fa-solid fa-tags me-2"></i>Danh Mục <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-lg rounded-3" id="categoryId" name="CategoryId" required>
+                                    <option value="" selected disabled>Chọn danh mục...</option>
+                                    <option value="1" selected="@(Model?.CategoryId == 1 ? "selected" : null)">Thời Trang Nam</option>
+                                    <option value="2" selected="@(Model?.CategoryId == 2 ? "selected" : null)">Thời Trang Nữ</option>
+                                    <option value="3" selected="@(Model?.CategoryId == 3 ? "selected" : null)">Thực Phẩm Tươi</option>
+                                    <option value="4" selected="@(Model?.CategoryId == 4 ? "selected" : null)">Đồ Khô</option>
+                                    <option value="5" selected="@(Model?.CategoryId == 5 ? "selected" : null)">Giày Dép</option>
+                                    <option value="6" selected="@(Model?.CategoryId == 6 ? "selected" : null)">Gia dụng</option>
+                                    <option value="7" selected="@(Model?.CategoryId == 7 ? "selected" : null)">Mỹ Phẩm</option>
+                                    <option value="8" selected="@(Model?.CategoryId == 8 ? "selected" : null)">Trái Cây</option>
+                                    <option value="9" selected="@(Model?.CategoryId == 9 ? "selected" : null)">Hoa Tươi</option>
+                                    <option value="10" selected="@(Model?.CategoryId == 10 ? "selected" : null)">Đồ Uống</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="unit" class="form-label fw-bold"><i class="fa-solid fa-scale-balanced me-2"></i>Đơn Vị Tính <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg rounded-3" id="unit" name="Unit" placeholder="Ví dụ: Cái, Kg, Hộp..." required>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="price" class="form-label fw-bold"><i class="fa-solid fa-money-bill-wave me-2"></i>Giá Bán (VNĐ) <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" class="form-control rounded-start-3" id="price" name="Price" placeholder="0" min="0" required>
+                                <span class="input-group-text rounded-end-3 bg-light">VNĐ</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-4 pt-4 border-top">
+                            <a href="/Products/Index" class="btn btn-light btn-lg px-4 rounded-pill fw-bold">Hủy</a>
+                            <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill fw-bold shadow hover-lift"><i class="fa-solid fa-floppy-disk me-2"></i>Lưu Sản Phẩm</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-dashed { border-style: dashed !important; border-color: #adb5bd !important; }
+    .object-fit-cover { object-fit: cover !important; }
+    .max-w-1000 { max-width: 1000px; margin: 0 auto; }
+    .hover-lift { transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-2px); }
+</style>
+
+<!-- Đoạn script nhỏ gọn phục vụ Preview Ảnh UI -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const uploadArea = document.getElementById('imageUploadArea');
+        const fileInput = document.getElementById('productImage');
+        const preview = document.getElementById('imagePreview');
+        const placeholder = document.getElementById('uploadPlaceholder');
+        const removeBtn = document.getElementById('removeImageBtn');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', function (e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    preview.src = event.target.result;
+                    preview.classList.remove('d-none');
+                    placeholder.classList.add('d-none');
+                    removeBtn.classList.remove('d-none');
+                    uploadArea.classList.remove('bg-light');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeBtn.addEventListener('click', function (e) {
+            fileInput.value = '';
+            preview.src = '#';
+            preview.classList.add('d-none');
+            placeholder.classList.remove('d-none');
+            removeBtn.classList.add('d-none');
+            uploadArea.classList.add('bg-light');
+        });
+    });
+</script>

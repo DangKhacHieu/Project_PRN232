@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -25,9 +25,33 @@ namespace Vendor_FE.Controllers
             _env = env;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var client = _httpClientFactory.CreateClient("BackendAPI");
+            var response = await client.GetAsync("api/Invoices");
+            var invoices = new List<InvoiceResponseDTO>();
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonStr = await response.Content.ReadAsStringAsync();
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                invoices = JsonSerializer.Deserialize<List<InvoiceResponseDTO>>(jsonStr, options) ?? new List<InvoiceResponseDTO>();
+            }
+            return View(invoices);
+        }
+
+        public async Task<IActionResult> Details(int id)
+        {
+            var client = _httpClientFactory.CreateClient("BackendAPI");
+            var response = await client.GetAsync($"api/Invoices/{id}/details");
+            if (!response.IsSuccessStatusCode) return RedirectToAction(nameof(Index));
+
+            var jsonStr = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var invoiceDetail = JsonSerializer.Deserialize<InvoiceDetailExportDTO>(jsonStr, options);
+            
+            if (invoiceDetail == null) return RedirectToAction(nameof(Index));
+
+            return View(invoiceDetail);
         }
 
         [HttpGet]
@@ -125,6 +149,24 @@ namespace Vendor_FE.Controllers
 
                 return File(memoryStream.ToArray(), "application/pdf", $"HoaDon_{id}.pdf");
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPaymentQr(int id)
+        {
+            var client = _httpClientFactory.CreateClient("BackendAPI");
+            var response = await client.GetAsync($"api/Invoices/{id}/generate-qr");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var data = JsonSerializer.Deserialize<Dictionary<string, string>>(content, options);
+                if (data != null && data.ContainsKey("qrUrl"))
+                {
+                    return Json(new { qrUrl = data["qrUrl"] });
+                }
+            }
+            return BadRequest();
         }
     }
 }

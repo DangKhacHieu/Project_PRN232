@@ -1,4 +1,4 @@
-﻿using BLL.Services.Interfaces;
+using BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -58,11 +58,23 @@ namespace API_BE.Controllers
             return Ok(details);
         }
 
+        [HttpGet("{id}/export-pdf")]
+        public async Task<IActionResult> ExportPdf(int id)
+        {
+            int vendorId = GetVendorIdFromToken();
+            if (vendorId <= 0) return Unauthorized();
+
+            var pdfBytes = await _invoiceService.GenerateInvoicePdfAsync(vendorId, id);
+            if (pdfBytes == null) return NotFound(new { Message = "Không tìm thấy dữ liệu hóa đơn." });
+
+            return File(pdfBytes, "application/pdf", $"Invoice_{id}.pdf");
+        }
+
         private int GetVendorIdFromToken()
         {
             //var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
             //return claim != null ? int.Parse(claim.Value) : 0;
-            return 5;
+            return 4;
         }
     }
 }

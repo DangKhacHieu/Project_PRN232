@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,10 +14,12 @@ namespace BLL.Services.Implementations
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepo;
+        private readonly IPhotoService _photoService;
 
-        public ProductService(IProductRepository productRepo)
+        public ProductService(IProductRepository productRepo, IPhotoService photoService)
         {
             _productRepo = productRepo;
+            _photoService = photoService;
         }
 
         // 1. LẤY DANH SÁCH
@@ -31,8 +33,10 @@ namespace BLL.Services.Implementations
                 ProductId = p.ProductId,
                 VendorId = p.VendorId,
                 CategoryId = p.CategoryId,
+                CategoryName = p.Category?.CategoryName,
                 ProductName = p.ProductName,
                 Unit = p.Unit,
+                Price = p.PriceHistories.OrderByDescending(ph => ph.EffectiveTime).FirstOrDefault()?.Price ?? 0,
                 ImageUrl = p.ImageUrl,
                 IsActive = p.IsActive,
                 CreatedAt = p.CreatedAt
@@ -50,11 +54,25 @@ namespace BLL.Services.Implementations
             product.Unit = request.Unit;
             product.IsActive = request.IsActive;
 
-            // Xử lý lưu ảnh mới nếu có (Ví dụ đơn giản, thực tế cần lưu file vào wwwroot/images)
+            // Xử lý giá bán mới (thêm vào lịch sử nếu thay đổi)
+            var currentPrice = product.PriceHistories.OrderByDescending(ph => ph.EffectiveTime).FirstOrDefault()?.Price ?? 0;
+            if (request.Price != currentPrice)
+            {
+                product.PriceHistories.Add(new PriceHistory
+                {
+                    Price = request.Price,
+                    EffectiveTime = DateTime.Now
+                });
+            }
+
+            // Xử lý lưu ảnh mới nếu có
             if (request.NewImage != null)
             {
-                // Đoạn logic lưu file IFormFile vào server và lấy ra đường dẫn URL
-                // product.ImageUrl = ".../images/" + fileName; 
+                var uploadedUrl = await _photoService.AddPhotoAsync(request.NewImage, "products");
+                if (!string.IsNullOrEmpty(uploadedUrl))
+                {
+                    product.ImageUrl = uploadedUrl;
+                }
             }
 
             await _productRepo.UpdateAsync(product);
@@ -81,10 +99,26 @@ namespace BLL.Services.Implementations
                 ProductName = request.ProductName,
                 CategoryId = request.CategoryId,
                 Unit = request.Unit,
-                //ImageUrl = request.ImageUrl, chua code
                 IsActive = true,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                PriceHistories = new List<PriceHistory>
+                {
+                    new PriceHistory
+                    {
+                        Price = request.Price,
+                        EffectiveTime = DateTime.Now
+                    }
+                }
             };
+
+            if (request.Image != null)
+            {
+                var uploadedUrl = await _photoService.AddPhotoAsync(request.Image, "products");
+                if (!string.IsNullOrEmpty(uploadedUrl))
+                {
+                    newProduct.ImageUrl = uploadedUrl;
+                }
+            }
 
             await _productRepo.CreateAsync(newProduct);
             return newProduct.ProductId;

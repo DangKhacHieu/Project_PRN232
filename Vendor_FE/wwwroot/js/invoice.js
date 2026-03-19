@@ -1,4 +1,4 @@
-﻿// wwwroot/js/invoice.js
+// wwwroot/js/invoice.js
 
 const API_BASE_URL = 'https://localhost:7169/api/Invoices';
 
@@ -16,36 +16,31 @@ function loadInvoices() {
         success: function (data) {
             var html = '';
             $.each(data, function (index, item) {
-                html += '<tr>';
-                html += `<td>#${item.invoiceId}</td>`;
+                html += '<tr class="border-bottom">';
+                html += `<td class="py-3 px-4 fw-bold text-start">#HD-${item.invoiceId.toString().padStart(6, '0')}</td>`;
 
-                // Cập nhật lại logic hiển thị ngày tháng theo DTO mới
                 let dateDisplay = item.month && item.year
-                    ? `Tháng ${item.month}/${item.year}`
+                    ? `${item.month}/${item.year}`
                     : new Date(item.createdAt).toLocaleDateString();
-                html += `<td>${dateDisplay}</td>`;
+                html += `<td class="py-3 text-muted">${dateDisplay}</td>`;
 
-                html += `<td>${item.totalAmount.toLocaleString()} đ</td>`;
+                html += `<td class="py-3 fw-bold text-end ${item.status === 'PAID' ? 'text-success' : 'text-danger'}">${item.totalAmount.toLocaleString()} đ</td>`;
 
-                // TRẠNG THÁI: DB của bạn đang lưu chữ IN HOA ("PAID", "UNPAID")
                 if (item.status === 'PAID') {
-                    html += '<td><span class="badge bg-success">Đã thanh toán</span></td>';
+                    html += `<td class="py-3"><span class="badge bg-success px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-check me-1"></i> Đã thanh toán</span></td>`;
                 } else {
-                    html += '<td><span class="badge bg-danger">Chưa thanh toán</span></td>';
+                    html += `<td class="py-3"><span class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-clock me-1"></i> Chưa thanh toán</span></td>`;
                 }
 
-                // NÚT HÀNH ĐỘNG
-                html += '<td>';
+                html += '<td class="py-3 px-4 text-end">';
+                html += `<a href="/Invoice/Details/${item.invoiceId}" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2 hover-lift"><i class="fa-solid fa-eye me-1"></i>Chi tiết</a>`;
+                
                 if (item.status === 'PAID') {
-                    // Thêm tham số 'this' vào hàm downloadReceipt
-                    html += `<button class="btn btn-sm btn-info text-white" onclick="downloadReceipt(${item.invoiceId}, this)">
-                                <i class="fas fa-download"></i> Tải Biên lai
-                            </button>`;
+                    html += `<button class="btn btn-sm btn-outline-secondary rounded-pill px-3 hover-lift" onclick="downloadReceipt(${item.invoiceId}, this)"><i class="fa-solid fa-file-pdf me-1"></i>Tải PDF</button>`;
                 } else {
-                    html += `<button class="btn btn-sm btn-primary" onclick="showPaymentQR(${item.invoiceId})"><i class="fas fa-qrcode"></i> Thanh toán</button>`;
+                    html += `<button class="btn btn-sm btn-success rounded-pill px-3 hover-lift" onclick="showPaymentQR(${item.invoiceId})"><i class="fa-solid fa-qrcode me-1"></i>Thanh toán</button>`;
                 }
-                html += '</td>';
-                html += '</tr>';
+                html += '</td></tr>';
             });
             $('#invoiceTableBody').html(html);
         },

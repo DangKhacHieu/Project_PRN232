@@ -1,4 +1,6 @@
 using System;
+using API_BE.Helpers;
+using CloudinaryDotNet;
 using BLL.Services.Implementations;
 using BLL.Services.Interfaces;
 using DAL.Data;
@@ -37,6 +39,19 @@ builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
+builder.Services.AddScoped<IVendorProfileRepository, VendorProfileRepository>();
+builder.Services.AddScoped<IVendorProfileService, VendorProfileService>();
+
+var cloudinarySettings = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
+var account = new Account(
+    cloudinarySettings.CloudName,
+    cloudinarySettings.ApiKey,
+    cloudinarySettings.ApiSecret
+);
+var cloudinary = new Cloudinary(account);
+builder.Services.AddSingleton(cloudinary);
+
+builder.Services.AddScoped<IPhotoService, PhotoService>();
 var app = builder.Build();
 
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -21,7 +21,7 @@ namespace BLL.DTOs
         [Required(ErrorMessage = "Vui lòng nhập giá bán.")]
         public decimal Price { get; set; } // Giá sẽ được lưu vào bảng PriceHistory
 
-        //// IFormFile dùng để nhận file ảnh từ Multipart/FormData
-        //public IFormFile? Image { get; set; }
+        // IFormFile dùng để nhận file ảnh từ Multipart/FormData
+        public Microsoft.AspNetCore.Http.IFormFile? Image { get; set; }
     }
 }

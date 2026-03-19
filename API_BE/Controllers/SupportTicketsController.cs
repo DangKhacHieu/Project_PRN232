@@ -1,4 +1,4 @@
-﻿using BLL.DTOs;
+using BLL.DTOs;
 using BLL.Services.Interfaces;
 using DAL.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -54,7 +54,7 @@ namespace API_BE.Controllers
         {
             //var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
             //return claim != null ? int.Parse(claim.Value) : 0;
-            return 5;
+            return 4;
         }
     }
 }

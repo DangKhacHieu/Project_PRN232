@@ -1,0 +1,96 @@
+@model Vendor_FE.Models.VendorProfileResponseDTO
+@{
+    ViewData["Title"] = "Hồ Sơ Cửa Hàng";
+}
+
+<div class="container-fluid py-4 max-w-1000">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="fa-solid fa-store me-2"></i>Hồ Sơ Cửa Hàng
+        </h2>
+    </div>
+
+    <div class="card shadow border-0 rounded-4 overflow-hidden mb-5">
+        <!-- Cover Image Section -->
+        <div class="position-relative bg-light" style="height: 300px;">
+            <img id="coverPreview" src="@(Model?.CoverImageUrl ?? "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg")" class="w-100 h-100 object-fit-cover" alt="Cover Image">
+            
+            <!-- Nút đổi ảnh cover nổi trên hình -->
+            <button class="btn btn-light position-absolute bottom-0 end-0 m-4 rounded-pill shadow fw-bold hover-lift" onclick="document.getElementById('coverInput').click()">
+                <i class="fa-solid fa-camera me-2"></i>Thay đổi ảnh bìa
+            </button>
+            <input type="file" id="coverInput" name="NewCoverImage" class="d-none" accept="image/*">
+        </div>
+
+        <!-- Profile Detail Section -->
+        <div class="card-body p-4 p-md-5 position-relative">
+            <!-- Avatar (Optional, if you want a circular avatar overlapping the cover) -->
+            <div class="position-absolute top-0 start-0 translate-middle shadow-sm bg-white rounded-circle ms-5 d-flex justify-content-center align-items-center" style="width: 100px; height: 100px; margin-top: -50px; border: 4px solid white;">
+                <i class="fa-solid fa-shop fa-3x text-primary"></i>
+            </div>
+            
+            <form method="post" action="/VendorProfiles/Index" enctype="multipart/form-data" class="mt-4 mt-md-0" style="padding-top: 20px;">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                }
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold"><i class="fa-solid fa-signature me-2"></i>Tên Gian Hàng <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-lg rounded-3 bg-light" value="@Model?.StoreName" name="StoreName" required>
+                    </div>
+                    <div class="col-md-6 mt-3 mt-md-0">
+                        <label class="form-label fw-bold"><i class="fa-solid fa-id-card me-2"></i>Chủ Sở Hữu</label>
+                        <input type="text" class="form-control form-control-lg rounded-3" value="@Model?.OwnerName" disabled readonly>
+                        <div class="form-text"><i class="fa-solid fa-lock me-1"></i> Không thể thay đổi</div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold"><i class="fa-solid fa-circle-info me-2"></i>Mô Tả / Giới Thiệu Cửa Hàng</label>
+                    <textarea class="form-control rounded-3 bg-light" rows="5" name="Description" placeholder="Nhập một vài dòng giới thiệu gian hàng của bạn tới khách hàng...">@Model?.Description</textarea>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="row align-items-center">
+                    <div class="col-md-7 text-muted small">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Cập nhật lần cuối: @(Model?.LastUpdated != null && Model?.LastUpdated.Year > 2000 ? Model?.LastUpdated.ToString("dd/MM/yyyy HH:mm") : "Hôm qua lúc 14:30")
+                    </div>
+                    <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                        <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill fw-bold shadow hover-lift"><i class="fa-solid fa-floppy-disk me-2"></i>Lưu Thay Đổi</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .max-w-1000 { max-width: 1000px; margin: 0 auto; }
+    .object-fit-cover { object-fit: cover !important; }
+    .hover-lift { transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fileInput = document.getElementById('coverInput');
+        const preview = document.getElementById('coverPreview');
+
+        fileInput.addEventListener('change', function (e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    preview.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+    });
+</script>

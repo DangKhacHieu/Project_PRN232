@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,8 +13,10 @@ namespace BLL.DTOs
         public int? CategoryId { get; set; }
         public string ProductName { get; set; } = null!;
         public string? Unit { get; set; }
+        public decimal Price { get; set; }
         public string? ImageUrl { get; set; }
         public bool IsActive { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public string? CategoryName { get; set; }
     }
 }

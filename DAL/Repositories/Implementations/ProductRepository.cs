@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,6 +24,7 @@ namespace DAL.Repositories.Implementations
             // Lấy danh sách sản phẩm của vendor, có thể kèm theo Category nếu cần
             return await _context.Products
                 .Include(p => p.Category)
+                .Include(p => p.PriceHistories)
                 .Where(p => p.VendorId == vendorId)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
@@ -33,6 +34,8 @@ namespace DAL.Repositories.Implementations
         {
             // Đảm bảo chỉ lấy sản phẩm đúng của vendor đó (bảo mật dữ liệu)
             return await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.PriceHistories)
                 .FirstOrDefaultAsync(p => p.ProductId == productId && p.VendorId == vendorId);
         }
 

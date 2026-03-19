@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,7 +13,6 @@ namespace API_BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // CHỈ CÓ ROLE "Vendor" MỚI ĐƯỢC GỌI API NÀY
     //[Authorize(Roles = "Vendor")]
     public class ProductsController : ControllerBase
     {
@@ -58,7 +57,7 @@ namespace API_BE.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMyProducts()
         {
-            int vendorId = GetVendorIdFromToken(); // Viết 1 hàm private dùng chung để lấy ID cho gọn
+            int vendorId = GetVendorIdFromToken(); 
             if (vendorId <= 0) return Unauthorized();
 
 
@@ -97,7 +96,7 @@ namespace API_BE.Controllers
         {
             //var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
             //return claim != null ? int.Parse(claim.Value) : 0;
-            return 5;
+            return 4;
         }
     }
 }

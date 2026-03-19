@@ -1,4 +1,4 @@
-﻿using BLL.DTOs;
+using BLL.DTOs;
 using BLL.Services.Interfaces;
 using DAL.Repositories.Interfaces;
 using System.Collections.Generic;
@@ -86,6 +86,58 @@ namespace BLL.Services.Implementations
             */
 
             return qrUrl;
+        }
+
+        public async Task<byte[]?> GenerateInvoicePdfAsync(int vendorId, int invoiceId)
+        {
+            var detail = await GetInvoiceDetailAsync(vendorId, invoiceId);
+            if (detail == null) return null;
+
+            using (var memoryStream = new System.IO.MemoryStream())
+            {
+                using (var writer = new iText.Kernel.Pdf.PdfWriter(memoryStream))
+                using (var pdf = new iText.Kernel.Pdf.PdfDocument(writer))
+                using (var document = new iText.Layout.Document(pdf))
+                {
+                    // Header
+                    document.Add(new iText.Layout.Element.Paragraph("BIEN LAI DIEN TU BAN QUAN LY CHO")
+                        .SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER)
+                        .SetFontSize(20));
+                    
+                    document.Add(new iText.Layout.Element.Paragraph($"Ma hoa don: #{detail.InvoiceId}"));
+                    document.Add(new iText.Layout.Element.Paragraph($"Khach hang: {detail.BusinessName}"));
+                    document.Add(new iText.Layout.Element.Paragraph($"Sap: {detail.StallCode}"));
+                    document.Add(new iText.Layout.Element.Paragraph($"Thang/Nam: {detail.Month}/{detail.Year}"));
+                    
+                    document.Add(new iText.Layout.Element.Paragraph("\nCHi TIET PHI:"));
+                    
+                    // Table
+                    var table = new iText.Layout.Element.Table(4, true);
+                    table.AddHeaderCell("Loai phi");
+                    table.AddHeaderCell("So luong");
+                    table.AddHeaderCell("Don gia");
+                    table.AddHeaderCell("Thanh tien");
+                    
+                    foreach (var item in detail.Items)
+                    {
+                        table.AddCell(item.FeeName ?? "");
+                        table.AddCell(item.Quantity?.ToString() ?? "0");
+                        table.AddCell((item.UnitPrice ?? 0m).ToString("N0"));
+                        table.AddCell(item.Amount.ToString("N0"));
+                    }
+                    
+                    document.Add(table);
+                    
+                    document.Add(new iText.Layout.Element.Paragraph($"\nTTONG TIEN: {detail.TotalAmount:N0} VND")
+                        .SetTextAlignment(iText.Layout.Properties.TextAlignment.RIGHT)
+                        .SetFontSize(16));
+                        
+                    document.Add(new iText.Layout.Element.Paragraph($"Trang thai: {detail.Status}")
+                        .SetTextAlignment(iText.Layout.Properties.TextAlignment.RIGHT));
+                }
+                
+                return memoryStream.ToArray();
+            }
         }
     }
 }

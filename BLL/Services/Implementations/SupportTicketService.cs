@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,12 +14,12 @@ namespace BLL.Services.Implementations
     public class SupportTicketService : ISupportTicketService
     {
         private readonly ISupportTicketRepository _ticketRepo;
-        private readonly IWebHostEnvironment _env;
+        private readonly IPhotoService _photoService;
 
-        public SupportTicketService(ISupportTicketRepository ticketRepo, IWebHostEnvironment env)
+        public SupportTicketService(ISupportTicketRepository ticketRepo, IPhotoService photoService)
         {
             _ticketRepo = ticketRepo;
-            _env = env;
+            _photoService = photoService;
         }
 
         public async Task<IEnumerable<TicketResponseDTO>> GetTicketsByVendorIdAsync(int vendorId)
@@ -54,28 +54,19 @@ namespace BLL.Services.Implementations
             // 2. Xử lý lưu danh sách file ảnh nếu có
             if (request.Images != null && request.Images.Any())
             {
-                string rootPath = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-
-                string uploadsFolder = Path.Combine(rootPath, "uploads", "tickets");
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
                 foreach (var file in request.Images)
                 {
                     if (file.Length > 0)
                     {
-                        string uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
-                        string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                        using (var fileStream = new FileStream(filePath, FileMode.Create))
+                        var uploadedUrl = await _photoService.AddPhotoAsync(file, "support_tickets");
+                        if (!string.IsNullOrEmpty(uploadedUrl))
                         {
-                            await file.CopyToAsync(fileStream);
+                            // Thêm vào collection, EF Core sẽ tự động insert vào bảng phụ TicketImage
+                            ticket.TicketImages.Add(new TicketImage
+                            {
+                                ImageUrl = uploadedUrl
+                            });
                         }
-
-                        // Thêm vào collection, EF Core sẽ tự động insert vào bảng phụ TicketImage
-                        ticket.TicketImages.Add(new TicketImage
-                        {
-                            ImageUrl = "/uploads/tickets/" + uniqueFileName
-                        });
                     }
                 }
             }
