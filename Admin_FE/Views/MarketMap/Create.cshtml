@@ -1,0 +1,191 @@
+﻿@{
+    ViewData["Title"] = "Tạo Sơ đồ Chợ";
+}
+
+<div class="container mt-3">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white fw-bold">
+                    ❇️ Tạo sơ đồ chợ mới
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tên chợ</label>
+                        <input id="marketName" class="form-control" placeholder="Ví dụ: Chợ Hải Sản" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold">Khoảng cách giữa các khu (m)</label>
+                        <input id="zoneGap" type="number" class="form-control" value="2" step="0.1" />
+                    </div>
+                    <hr />
+                    <div id="zonesContainer">
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button id="btnAddZone" class="btn btn-outline-primary flex-grow-1">➕ Thêm Khu</button>
+                        <button id="btnGenerate" class="btn btn-success flex-grow-1">🏗️ Tạo Sơ đồ</button>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    - Điền các khu ở bên trái rồi bấm "Tạo Sơ đồ".<br />
+                    - Bấm nút Quay lại để về danh sách khi đã tạo xong.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <strong id="mapTitle">BẢN ĐỒ (Preview)</strong>
+                    <a href="/MarketMap/Index" class="btn btn-sm btn-outline-secondary">Quay lại danh sách</a>
+                </div>
+                <div class="card-body p-0">
+                    <div id="mapContainer" style="height:70vh; overflow:auto; position:relative; background: repeating-linear-gradient(45deg, #eef2f7 0 20px, transparent 20px 40px);">
+                        <div id="mapPlaceholder" class="text-center w-100" style="padding-top:40px;">
+                            <div class="text-muted">Chưa có sơ đồ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        const API_BASE = 'https://localhost:7169/api/markets'; // Nhớ kiểm tra lại Port của Hải
+        let zoneCounter = 1;
+
+        $(document).ready(function () {
+            // 1. Thêm một form Khu vực mặc định
+            addZoneForm();
+
+            // 2. Nút Thêm Khu
+            $('#btnAddZone').click(function () {
+                zoneCounter++;
+                addZoneForm();
+            });
+
+            // 3. Nút Xóa Khu
+            $(document).on('click', '.btn-remove-zone', function () {
+                $(this).closest('.zone-form').remove();
+            });
+
+            // 4. Xử lý logic Thêm Form
+            function addZoneForm() {
+                const newZoneHtml = `
+                    <div class="zone-form border p-3 mb-3 bg-light rounded">
+                        <h5 class="text-primary fw-bold">Khu ${zoneCounter}</h5>
+                        <div class="form-group mb-1"><label>Tên khu:</label><input type="text" class="form-control z-name" value="Khu Mới ${zoneCounter}" /></div>
+                        <div class="form-group mb-1"><label>Tiền tố mã (VD: A, HS):</label><input type="text" class="form-control z-prefix" placeholder="Bỏ trống để tự động" /></div>
+                        <div class="row">
+                            <div class="col-6 form-group mb-1"><label>Tổng sạp:</label><input type="number" class="form-control z-num" value="8" /></div>
+                            <div class="col-6 form-group mb-1"><label>Số cột:</label><input type="number" class="form-control z-col" value="4" /></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-4 form-group mb-1"><label>Rộng(m):</label><input type="number" class="form-control z-w" value="3" /></div>
+                            <div class="col-4 form-group mb-1"><label>Dài(m):</label><input type="number" class="form-control z-h" value="3" /></div>
+                            <div class="col-4 form-group mb-1"><label>Lối đi(m):</label><input type="number" class="form-control z-gap" value="1" /></div>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm w-100 mt-2 btn-remove-zone">Xóa Khu Này</button>
+                    </div>
+                `;
+                $('#zonesContainer').append(newZoneHtml);
+            }
+
+            // 5. Nút TẠO SƠ ĐỒ (Gửi API)
+            $('#btnGenerate').click(function () {
+                const marketName = $('#marketName').val().trim();
+                if (!marketName) return Swal.fire('Lỗi', 'Vui lòng nhập Tên chợ!', 'warning');
+
+                let zonesArray = [];
+                $('.zone-form').each(function () {
+                    const zName = $(this).find('.z-name').val() || "Khu Mới";
+                    // Tự động tạo tiền tố nếu để trống
+                    let prefix = $(this).find('.z-prefix').val() || "";
+                    if (!prefix) {
+                        prefix = zName.toUpperCase().replace(/\bKHU\b/g, '').trim().split(/\s+/).map(w => w[0] || '').join('') || 'S';
+                    }
+
+                    zonesArray.push({
+                        zoneName: zName,
+                        zonePrefix: prefix,
+                        numberOfStalls: parseInt($(this).find('.z-num').val()) || 1,
+                        columns: parseInt($(this).find('.z-col').val()) || 1,
+                        stallWidth: parseFloat($(this).find('.z-w').val()) || 1,
+                        stallHeight: parseFloat($(this).find('.z-h').val()) || 1,
+                        stallGap: parseFloat($(this).find('.z-gap').val()) || 0
+                    });
+                });
+
+                if(zonesArray.length === 0) return Swal.fire('Lỗi', 'Bạn phải có ít nhất 1 Khu vực!', 'warning');
+
+                const requestData = {
+                    marketName: marketName,
+                    zoneGap: parseFloat($('#zoneGap').val()) || 0,
+                    zones: zonesArray
+                };
+
+                Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                $.ajax({
+                    url: `${API_BASE}/generate`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(requestData),
+                    success: function (response) {
+                        Swal.fire('Thành công!', 'Tạo sơ đồ thành công!', 'success');
+                        $('#mapTitle').text('Sơ đồ: ' + (response.marketData?.marketName || marketName));
+                        renderMapPreview(response.marketData);
+                    },
+                    error: function (err) {
+                        if (err.responseJSON && err.responseJSON.errors) {
+                            let errorHtml = "<ul style='text-align: left;'>";
+                            let errors = err.responseJSON.errors;
+                            for (let field in errors) { errorHtml += `<li>${errors[field].join(', ')}</li>`; }
+                            errorHtml += "</ul>";
+                            Swal.fire({ title: 'Lỗi Dữ Liệu', html: errorHtml, icon: 'error' });
+                        } else {
+                            Swal.fire('Lỗi Server', err.responseText || 'Đã có lỗi xảy ra', 'error');
+                        }
+                    }
+                });
+            });
+
+            // 6. Hàm vẽ Preview (Không tương tác kéo thả ở trang này, chỉ xem)
+            function renderMapPreview(market) {
+                const container = $('#mapContainer');
+                container.empty();
+                const scale = 20;
+
+                market.zones.forEach((zone) => {
+                    const zWidth = (zone.maxX - zone.minX) * scale;
+                    const zHeight = (zone.maxY - zone.minY) * scale;
+
+                    const zoneDiv = $(`
+                        <div style="position: absolute; left: ${zone.minX * scale}px; top: ${zone.minY * scale}px;
+                                    width: ${zWidth}px; height: ${zHeight}px;
+                                    border: 2px dashed #3b82f6; background: rgba(59, 130, 246, 0.05);">
+                            <span style="position: absolute; top: -25px; left: 0; background: #3b82f6; color: white; padding: 2px 6px; font-size: 11px; border-radius: 4px;">${zone.zoneName}</span>
+                        </div>
+                    `);
+                    container.append(zoneDiv);
+
+                    zone.stalls.forEach(stall => {
+                        const stallDiv = $(`
+                            <div style="position: absolute; display: flex; align-items: center; justify-content: center;
+                                        left: ${stall.posX * scale}px; top: ${stall.posY * scale}px;
+                                        width: ${stall.width * scale}px; height: ${stall.height * scale}px;
+                                        background-color: #10b981; color: white; font-size: 10px; font-weight: bold; border-radius: 3px;">
+                                ${stall.stallCode}
+                            </div>
+                        `);
+                        container.append(stallDiv);
+                    });
+                });
+            }
+        });
+    </script>
+}

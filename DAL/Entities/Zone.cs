@@ -30,8 +30,20 @@ namespace DAL.Entities
         [Column("created_at")]
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
 
-        [ForeignKey("MarketId")]
+		[Column("min_x")]
+		public double? MinX { get; set; }
+
+		[Column("min_y")]
+		public double? MinY { get; set; }
+
+		[Column("max_x")]
+		public double? MaxX { get; set; }
+
+		[Column("max_y")]
+		public double? MaxY { get; set; }
+
+		[ForeignKey("MarketId")]
         public virtual Market? Market { get; set; }
         public virtual ICollection<Stall> Stalls { get; set; } = new List<Stall>();
-    }
+	}
 }

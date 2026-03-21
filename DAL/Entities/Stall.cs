@@ -42,7 +42,13 @@ namespace DAL.Entities
         [Column("pos_y")]
         public double? PosY { get; set; }
 
-        [Column("created_at")]
+		[Column("width")]
+		public double? Width { get; set; }
+
+		[Column("height")]
+		public double? Height { get; set; }
+
+		[Column("created_at")]
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
 
         [ForeignKey("ZoneId")]

@@ -1,0 +1,223 @@
+﻿@{
+    ViewData["Title"] = "Xem sơ đồ chợ";
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-info">
+            <div class="card-body">
+                <h4 class="card-title text-info mb-3">🔍 Tra cứu sơ đồ</h4>
+
+                <div class="form-group mb-3">
+                    <label class="fw-bold mb-2">Chọn chợ cần xem:</label>
+                    <select id="viewMarketId" class="form-select form-select-lg">
+                        <option value="">-- Đang tải danh sách chợ --</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-info w-100 mb-3 fw-bold fs-5 text-white shadow-sm" id="btnLoadViewMap">
+                    Tải sơ đồ lên
+                </button>
+
+                <hr />
+                <button class="btn btn-warning w-100 fw-bold shadow" id="btnGoToEdit" style="display: none;">
+                    ⚙️ Chuyển sang Cập nhật sơ đồ
+                </button>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-3 border-secondary" id="legendCard" style="display: none;">
+            <div class="card-body py-2">
+                <h6 class="fw-bold text-secondary mb-2">Chú thích:</h6>
+                <div class="d-flex align-items-center mb-1"><div style="width: 15px; height: 15px; background: #28a745; margin-right: 10px; border-radius: 3px;"></div> Đang trống</div>
+                <div class="d-flex align-items-center mb-1"><div style="width: 15px; height: 15px; background: #dc3545; margin-right: 10px; border-radius: 3px;"></div> Đã cho thuê</div>
+                <div class="d-flex align-items-center"><div style="width: 15px; height: 15px; background: #ffc107; margin-right: 10px; border-radius: 3px;"></div> Đang bảo trì</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h3 id="displayMarketName" class="text-center text-primary mb-3 text-uppercase fw-bold"></h3>
+        <div id="mapContainer" style="position: relative; width: 100%; height: 750px; background-color: #f8f9fa; border: 2px solid #ccc; overflow: auto; border-radius: 8px; box-shadow: inset 0 0 10px rgba(0,0,0,0.05);">
+            <p class="text-center text-muted mt-5 fs-5" id="mapPlaceholder">Vui lòng chọn Tên chợ ở menu bên trái để hiển thị sơ đồ</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    const API_URL = 'https://localhost:7169/api/markets'; // Đổi lại Port của bạn nếu khác
+    let loadedMarketId = 0;
+
+    $(document).ready(function () {
+
+        // 1. NGAY KHI VÀO TRANG: TỰ ĐỘNG GỌI API LẤY DANH SÁCH CHỢ
+        loadMarketList();
+
+        function loadMarketList() {
+            $.ajax({
+                url: API_URL, // Gọi đến cổng GET /api/markets
+                type: 'GET',
+                success: function (markets) {
+                    let dropdown = $('#viewMarketId');
+                    dropdown.empty();
+
+                    if (markets.length === 0) {
+                        dropdown.append('<option value="">-- Chưa có chợ nào trong hệ thống --</option>');
+                        return;
+                    }
+
+                    dropdown.append('<option value="">-- Vui lòng chọn chợ --</option>');
+                    markets.forEach(m => {
+                        dropdown.append(`<option value="${m.marketId}">${m.marketName}</option>`);
+                    });
+                },
+                error: function () {
+                    $('#viewMarketId').html('<option value="">Lỗi tải danh sách chợ!</option>');
+                }
+            });
+        }
+
+        // 2. TẢI SƠ ĐỒ LÊN MÀN HÌNH THEO CHỢ ĐÃ CHỌN
+        $('#btnLoadViewMap').click(function () {
+            const marketId = $('#viewMarketId').val();
+            if (!marketId) {
+                Swal.fire('Chú ý', 'Vui lòng chọn một khu chợ từ danh sách!', 'warning');
+                return;
+            }
+
+            Swal.fire({ title: 'Đang tải bản đồ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+
+            $.ajax({
+                url: `${API_URL}/${marketId}/layout`,
+                type: 'GET',
+                success: function (market) {
+                    Swal.close();
+                    loadedMarketId = market.marketId;
+
+                    $('#displayMarketName').text(`SƠ ĐỒ: ${market.marketName}`);
+                    $('#mapPlaceholder').hide();
+                    $('#btnGoToEdit').fadeIn();
+                    $('#legendCard').fadeIn();
+
+                    renderStaticMap(market);
+                },
+                error: function () {
+                    Swal.fire('Lỗi', 'Không thể tải sơ đồ này', 'error');
+                }
+            });
+        });
+
+        // 3. NÚT CHUYỂN HƯỚNG SANG TRANG CẬP NHẬT (EDIT)
+            // Ở trang Index.cshtml
+    $('#btnGoToEdit').click(function () {
+        const selectedMarketId = $('#viewMarketId').val(); // Lấy ID chợ đang xem
+        if (selectedMarketId) {
+            // Chuyển sang trang Edit kèm theo ID trên URL
+            window.location.href = `/MarketMap/Edit?id=${selectedMarketId}`;
+        } else {
+            Swal.fire('Thông báo', 'Vui lòng chọn chợ trước khi chỉnh sửa!', 'info');
+        }
+    });
+
+        // 4. HÀM VẼ BẢN ĐỒ TĨNH (KHÓA KÉO THẢ, CHỈ XEM POPUP)
+        function renderStaticMap(market) {
+            const container = $('#mapContainer');
+            container.empty();
+            const scale = 20;
+
+            market.zones.forEach((zone, index) => {
+                // Khung Khu vực
+                const zoneDiv = $(`
+                    <div class="zone-box" id="zone-${index}"
+                         style="left: 0px; top: 0px;
+                                transform: translate(${zone.minX * scale}px, ${zone.minY * scale}px);
+                                width: ${(zone.maxX - zone.minX) * scale}px;
+                                height: ${(zone.maxY - zone.minY) * scale}px;
+                                z-index: 1;">
+                        <span class="zone-title">${zone.zoneName} (Nháy đúp)</span>
+                    </div>
+                `);
+                container.append(zoneDiv);
+
+                // Vẽ Sạp
+                zone.stalls.forEach(stall => {
+                    let bgColor = '#28a745';
+                    if (stall.status === 'RENTED') bgColor = '#dc3545';
+                    else if (stall.status === 'MAINTENANCE') bgColor = '#ffc107';
+
+                    const stallDiv = $(`
+                        <div class="stall-box stall-of-zone-${index}"
+                             style="display: none; left: 0px; top: 0px;
+                                    transform: translate(${stall.posX * scale}px, ${stall.posY * scale}px);
+                                    width: ${stall.width * scale}px;
+                                    height: ${stall.height * scale}px;
+                                    background-color: ${bgColor};
+                                    z-index: 10;">
+                            ${stall.stallCode}
+                        </div>
+                    `);
+
+                    // 👉 TƯƠNG TÁC: Click xem Popup (Đóng băng kéo thả)
+                    stallDiv.click(function() {
+                         Swal.fire({
+                             title: `Thông tin sạp ${stall.stallCode}`,
+                             html: `<div style="text-align: left; font-size: 1.1em; line-height: 1.8;">
+                                        👉 <b>Khu vực:</b> ${zone.zoneName} <br/>
+                                        📏 <b>Diện tích:</b> ${stall.areaM2} m² <br/>
+                                        🏷️ <b>Loại mặt hàng:</b> ${stall.allowedBusinessType} <br/>
+                                        📌 <b>Trạng thái:</b> ${stall.status === 'RENTED' ? '<span class="text-danger fw-bold">Đã cho thuê</span>' : stall.status === 'MAINTENANCE' ? '<span class="text-warning fw-bold">Đang bảo trì</span>' : '<span class="text-success fw-bold">Đang trống</span>'}
+                                    </div>`,
+                             icon: 'info',
+                             confirmButtonText: 'Đóng'
+                         });
+                    });
+
+                    container.append(stallDiv);
+                });
+
+                // Nháy đúp ẩn/hiện sạp
+                $(`#zone-${index}`).dblclick(function () {
+                    $(`.stall-of-zone-${index}`).fadeToggle("fast");
+                });
+            });
+        }
+    });
+</script>
+
+<style>
+    /* CSS Khóa tĩnh: Bỏ hoàn toàn cursor: grab và các hiệu ứng di chuyển */
+    .zone-box {
+        position: absolute;
+        border: 2px solid #17a2b8;
+        background-color: rgba(23, 162, 184, 0.05);
+    }
+
+    .zone-title {
+        position: absolute;
+        top: -25px;
+        left: 0;
+        font-weight: bold;
+        color: #17a2b8;
+    }
+
+    .stall-box {
+        position: absolute;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        cursor: pointer; /* Chuột chuyển thành hình bàn tay để báo hiệu có thể click xem */
+        transition: transform 0.1s;
+    }
+
+        .stall-box:hover {
+            transform-origin: center; /* Hiệu ứng phình to nhẹ khi rê chuột vào */
+            z-index: 99 !important;
+        }
+</style>
