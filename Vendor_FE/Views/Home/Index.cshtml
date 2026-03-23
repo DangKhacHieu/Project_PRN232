@@ -1,8 +1,107 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Bảng điều khiển";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid py-2">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0 text-dark">
+            <i class="fa-solid fa-gauge-high me-2 text-primary"></i>Tổng quan Gian hàng
+        </h2>
+        <span class="text-muted"><i class="fa-regular fa-calendar me-2"></i>@DateTime.Now.ToString("dd/MM/yyyy")</span>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-4 mb-4">
+        <!-- Card 1 -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card widget-card bg-primary text-white h-100 border-0 shadow-sm">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-uppercase fw-semibold mb-2 opacity-75">Sản phẩm đang bán</h6>
+                        <h2 class="mb-0 fw-bold">@ViewBag.TotalProducts</h2>
+                    </div>
+                    <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-box-open fa-2x"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 px-4 pb-3">
+                    <a href="/Products/Index" class="text-white text-decoration-none small"><i class="fa-solid fa-arrow-right me-1"></i> Xem tất cả</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Card 2 -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card widget-card bg-success text-white h-100 border-0 shadow-sm">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-uppercase fw-semibold mb-2 opacity-75">Tổng chi phí thanh toán</h6>
+                        <h2 class="mb-0 fw-bold">@(((decimal)ViewBag.TotalPaidExpense).ToString("N0")) đ</h2>
+                    </div>
+                    <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-wallet fa-2x"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 px-4 pb-3">
+                    <span class="small opacity-75"><i class="fa-solid fa-check-circle me-1"></i> Các khoản phí đã góp</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card widget-card bg-warning text-dark h-100 border-0 shadow-sm">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-uppercase fw-semibold mb-2 opacity-75">Hóa đơn chờ thanh toán</h6>
+                        <h2 class="mb-0 fw-bold">@ViewBag.UnpaidInvoices</h2>
+                    </div>
+                    <div class="bg-dark bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-file-invoice-dollar fa-2x"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 px-4 pb-3">
+                    <a href="/Invoice/Index" class="text-dark text-decoration-none small fw-bold"><i class="fa-solid fa-arrow-right me-1"></i> Thanh toán ngay</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card widget-card bg-danger text-white h-100 border-0 shadow-sm">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-uppercase fw-semibold mb-2 opacity-75">Sự cố đang chờ duyệt</h6>
+                        <h2 class="mb-0 fw-bold">@ViewBag.PendingTickets</h2>
+                    </div>
+                    <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-triangle-exclamation fa-2x"></i>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 px-4 pb-3">
+                    <a href="/Support/Index" class="text-white text-decoration-none small"><i class="fa-solid fa-arrow-right me-1"></i> Xem chi tiết</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row g-4">
+        <!-- Quản lý Cửa Hàng Chuyên Sâu -->
+        <div class="col-12">
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-store me-2 text-primary"></i>Cập nhật Trạng thái Gian hàng</h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted mb-4">Thông tin E-Stall hiển thị ngoài mặt tiền giúp thu hút khách hàng trải nghiệm qua mạng. Hãy đảm bảo thông tin luôn được cập nhật chính xác và tối ưu nhất.</p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="/VendorProfiles/Index" class="btn btn-primary px-4 rounded-pill shadow-sm"><i class="fa-solid fa-pen-to-square me-2"></i>Thay đổi Mô Tả</a>
+                        <a href="/Products/Create" class="btn btn-outline-primary px-4 rounded-pill"><i class="fa-solid fa-plus me-2"></i>Thêm Sản phẩm</a>
+                        <a href="/Support/Create" class="btn btn-outline-danger px-4 rounded-pill"><i class="fa-solid fa-headset me-2"></i>Báo lỗi/Sự cố</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

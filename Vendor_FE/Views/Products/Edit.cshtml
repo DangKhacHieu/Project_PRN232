@@ -1,0 +1,131 @@
+@model Vendor_FE.Models.ProductUpdateRequestDTO
+@{
+    ViewData["Title"] = "Cập nhật Sản phẩm";
+    var productId = ViewBag.ProductId ?? 1; // Demo purpose
+}
+
+<div class="container-fluid py-4 max-w-1000">
+    <div class="d-flex align-items-center mb-4">
+        <a href="/Products/Index" class="btn btn-light rounded-circle shadow-sm me-3 d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+            <i class="fa-solid fa-arrow-left text-dark"></i>
+        </a>
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="fa-solid fa-pen-to-square me-2"></i>Cập nhật Sản Phẩm #@productId
+        </h2>
+    </div>
+
+    <!-- Màn Edit tương đương màn Create nhưng tải sẵn thông tin và thêm trường IsActive -->
+    <div class="card shadow border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger">
+                    <div asp-validation-summary="All"></div>
+                </div>
+            }
+            <form method="post" action="/Products/Edit/@ViewBag.ProductId" enctype="multipart/form-data">
+                <div class="row">
+                    <!-- Right Column: Image Upload -->
+                    <div class="col-12 col-md-4 mb-4 mb-md-0 order-md-2">
+                        <label class="form-label fw-bold"><i class="fa-solid fa-camera me-2"></i>Ảnh Sản Phẩm Mới (Tuỳ chọn)</label>
+                        <div class="card border-2 border-dashed rounded-4 bg-light text-center position-relative" style="height: 250px; cursor: pointer;" id="imageUploadArea">
+                            
+                            <!-- Ảnh cũ -->
+                            <img id="imagePreview" src="@(ViewBag.ImageUrl ?? "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg")" class="w-100 h-100 object-fit-cover rounded-4" alt="Preview">
+                            
+                            <!-- Overlay hướng dẫn thay ảnh -->
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center bg-dark bg-opacity-50 rounded-4 text-white opacity-0 hover-opacity-100 transition-opacity" id="uploadPlaceholder">
+                                <i class="fa-solid fa-cloud-arrow-up fa-2x mb-2"></i>
+                                <span class="fw-bold">Click để đổi ảnh</span>
+                            </div>
+                        </div>
+                        <input type="file" id="productImage" name="NewImage" class="d-none" accept="image/*">
+                        <p class="text-muted small mt-2 text-center"><i class="fa-solid fa-circle-info me-1"></i> Bỏ trống nếu không muốn đổi ảnh.</p>
+                    </div>
+
+                    <!-- Left Column: Product Details -->
+                    <div class="col-12 col-md-8 order-md-1 pe-md-5">
+                        <div class="mb-4">
+                            <label for="productName" class="form-label fw-bold"><i class="fa-solid fa-box me-2"></i>Tên Sản Phẩm <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg rounded-3" id="productName" name="ProductName" value="@Model?.ProductName" required>
+                        </div>
+
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <label for="categoryId" class="form-label fw-bold"><i class="fa-solid fa-tags me-2"></i>Danh Mục</label>
+                                <select class="form-select form-select-lg rounded-3" id="categoryId" name="CategoryId">
+                                    <option value="1" selected="@(Model?.CategoryId == 1 ? "selected" : null)">Thời Trang Nam</option>
+                                    <option value="2" selected="@(Model?.CategoryId == 2 ? "selected" : null)">Thời Trang Nữ</option>
+                                    <option value="3" selected="@(Model?.CategoryId == 3 ? "selected" : null)">Thực Phẩm Tươi</option>
+                                    <option value="4" selected="@(Model?.CategoryId == 4 ? "selected" : null)">Đồ Khô</option>
+                                    <option value="5" selected="@(Model?.CategoryId == 5 ? "selected" : null)">Giày Dép</option>
+                                    <option value="6" selected="@(Model?.CategoryId == 6 ? "selected" : null)">Gia dụng</option>
+                                    <option value="7" selected="@(Model?.CategoryId == 7 ? "selected" : null)">Mỹ Phẩm</option>
+                                    <option value="8" selected="@(Model?.CategoryId == 8 ? "selected" : null)">Trái Cây</option>
+                                    <option value="9" selected="@(Model?.CategoryId == 9 ? "selected" : null)">Hoa Tươi</option>
+                                    <option value="10" selected="@(Model?.CategoryId == 10 ? "selected" : null)">Đồ Uống</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="unit" class="form-label fw-bold"><i class="fa-solid fa-scale-balanced me-2"></i>Đơn Vị Tính <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg rounded-3" id="unit" name="Unit" value="@Model?.Unit" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="price" class="form-label fw-bold"><i class="fa-solid fa-money-bill-wave me-2"></i>Giá Bán (VNĐ) <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <input type="number" class="form-control rounded-start-3" id="price" name="Price" value="@Model?.Price" min="0" required>
+                                <span class="input-group-text rounded-end-3 bg-light">VNĐ</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 p-4 border rounded-4 bg-light">
+                            <div class="form-check form-switch form-switch-lg p-0 m-0 d-flex justify-content-between align-items-center">
+                                <label class="form-check-label fw-bold mb-0" for="isActive"><i class="fa-solid fa-store me-2 text-success"></i>Trạng thái kinh doanh</label>
+                                <input class="form-check-input flex-shrink-0 ms-auto" type="checkbox" role="switch" id="isActive" name="IsActive" value="true" checked="@(Model?.IsActive == true ? "checked" : null)" style="width: 3em; height: 1.5em;">
+                            </div>
+                            <p class="text-muted small mt-2 mb-0 ms-4 ps-2">Tắt công tắc này nếu bạn muốn ngừng bán tạm thời (không hiên ra ngoài măt tiền shop).</p>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-4 pt-4 border-top">
+                            <a href="/Products/Index" class="btn btn-light btn-lg px-4 rounded-pill fw-bold">Hủy</a>
+                            <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill fw-bold shadow hover-lift"><i class="fa-solid fa-floppy-disk me-2"></i>Lưu Thay Đổi</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .border-dashed { border-style: dashed !important; border-color: #adb5bd !important; }
+    .object-fit-cover { object-fit: cover !important; }
+    .max-w-1000 { max-width: 1000px; margin: 0 auto; }
+    .hover-lift { transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-2px); }
+    .opacity-0 { opacity: 0; }
+    .transition-opacity { transition: opacity 0.3s ease; }
+    .hover-opacity-100:hover { opacity: 1; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const uploadArea = document.getElementById('imageUploadArea');
+        const fileInput = document.getElementById('productImage');
+        const preview = document.getElementById('imagePreview');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', function (e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    preview.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+</script>

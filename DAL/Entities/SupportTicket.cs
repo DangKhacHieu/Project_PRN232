@@ -26,7 +26,6 @@ namespace DAL.Entities
         [Column("description")]
         public string? Description { get; set; }
 
-        // Trạng thái: "PENDING", "PROCESSING", "DONE"
         [MaxLength(30)]
         [Column("status")]
         public string Status { get; set; } = "PENDING";
@@ -39,5 +38,12 @@ namespace DAL.Entities
 
         // OData Navigation: Lấy luôn danh sách ảnh đính kèm của sự cố
         public virtual ICollection<TicketImage> TicketImages { get; set; } = new List<TicketImage>();
+    }
+    public static class TicketStatus
+    {
+        public const string Pending = "PENDING";
+        public const string Processing = "PROCESSING";
+        public const string Resolved = "RESOLVED"; 
+        public const string Closed = "CLOSED";    
     }
 }

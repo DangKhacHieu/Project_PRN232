@@ -1,0 +1,125 @@
+@model List<Vendor_FE.DTOs.InvoiceResponseDTO>
+@{
+    ViewData["Title"] = "Hóa Đơn Dịch Vụ";
+}
+
+<div class="container-fluid py-4 max-w-1200">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="fa-solid fa-file-invoice-dollar me-2"></i>Hóa Đơn Dịch Vụ
+        </h2>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card shadow border-0 rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center">
+                <thead class="bg-light text-secondary">
+                    <tr>
+                        <th class="py-3 px-4 text-start">Mã HĐ</th>
+                        <th class="py-3">Kỳ Thu Phí</th>
+                        <th class="py-3 text-end">Tổng Tiền (VNĐ)</th>
+                        <th class="py-3">Trạng Thái</th>
+                        <th class="py-3 px-4 text-end">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="invoiceTableBody">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <tr><td colspan="5" class="py-4 text-center text-muted">Không có dữ liệu hóa đơn.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            var isPaid = item.Status == "PAID";
+                            var dateDisplay = item.Month > 0 && item.Year > 0 ? $"{item.Month}/{item.Year}" : item.CreatedAt.ToString("MM/dd/yyyy");
+
+                            <tr class="border-bottom">
+                                <td class="py-3 px-4 fw-bold text-start">#HD-@item.InvoiceId.ToString("D6")</td>
+                                <td class="py-3 text-muted">@dateDisplay</td>
+                                <td class="py-3 fw-bold text-end @(isPaid ? "text-success" : "text-danger")">@item.TotalAmount.ToString("N0") đ</td>
+                                
+                                @if (isPaid)
+                                {
+                                    <td class="py-3"><span class="badge bg-success px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-check me-1"></i> Đã thanh toán</span></td>
+                                }
+                                else
+                                {
+                                    <td class="py-3"><span class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-clock me-1"></i> Chưa thanh toán</span></td>
+                                }
+
+                                <td class="py-3 px-4 text-end">
+                                    <a href="/Invoice/Details/@item.InvoiceId" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2 hover-lift"><i class="fa-solid fa-eye me-1"></i>Chi tiết</a>
+                                    
+                                    @if (isPaid)
+                                    {
+                                        <a href="/Invoice/ExportPdf/@item.InvoiceId" class="btn btn-sm btn-outline-secondary rounded-pill px-3 hover-lift"><i class="fa-solid fa-file-pdf me-1"></i>Tải PDF</a>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-success rounded-pill px-3 hover-lift" onclick="showPaymentQR(@item.InvoiceId)"><i class="fa-solid fa-qrcode me-1"></i>Thanh toán</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thanh Toán VietQR -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header bg-light border-bottom-0 rounded-top-4">
+                <h5 class="modal-title fw-bold text-primary" id="paymentModalLabel"><i class="fa-solid fa-qrcode me-2"></i>Thanh toán qua VietQR</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <p class="text-muted mb-4">Vui lòng mở ứng dụng ngân hàng và quét mã QR dưới đây:</p>
+                <div class="bg-light p-3 rounded-4 d-inline-block shadow-sm">
+                    <img id="qrImage" src="" alt="Mã QR Thanh toán" class="img-fluid" style="max-width: 250px; display: none;" />
+                    <div id="qrLoading" class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4 hover-lift" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .max-w-1200 { max-width: 1200px; margin: 0 auto; }
+    .table-hover tbody tr:hover { background-color: #f8f9fa; }
+    .hover-lift { transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+</style>
+
+@section Scripts {
+    <script>
+        function showPaymentQR(invoiceId) {
+            $('#qrImage').hide();
+            $('#qrLoading').show();
+            $('#paymentModal').modal('show');
+
+            $.ajax({
+                url: `/Invoice/GetPaymentQr?id=${invoiceId}`,
+                type: 'GET',
+                success: function (res) {
+                    $('#qrImage').attr('src', res.qrUrl).show();
+                    $('#qrLoading').hide();
+                },
+                error: function () {
+                    alert('Có lỗi khi tạo mã QR. Vui lòng thử lại sau!');
+                    $('#paymentModal').modal('hide');
+                }
+            });
+        }
+    </script>
+}

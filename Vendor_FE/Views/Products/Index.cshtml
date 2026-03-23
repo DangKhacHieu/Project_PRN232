@@ -1,0 +1,151 @@
+@model List<Vendor_FE.Models.ProductResponseDTO>
+@{
+    ViewData["Title"] = "Quản lý Sản phẩm";
+}
+
+<!-- LƯU Ý: Vui lòng thêm Bootstrap 5 và FontAwesome 6 CDN vào _Layout.cshtml của bạn -->
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="fa-solid fa-boxes-stacked me-2"></i>Quản lý Sản phẩm
+        </h2>
+        <a href="/Products/Create" class="btn btn-primary px-4 shadow-sm rounded-pill hover-lift">
+            <i class="fa-solid fa-plus me-2"></i>Thêm Sản Phẩm Mới
+        </a>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="card shadow-sm border-0 mb-4 rounded-4">
+        <div class="card-body bg-light rounded-4">
+            <form method="get" action="/Products/Index">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group search-group shadow-sm">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="fa-solid fa-search text-muted"></i>
+                            </span>
+                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Tìm kiếm sản phẩm..." value="@ViewBag.CurrentSearch">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="categoryId">
+                            <option value="">Tất cả danh mục</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                foreach (var cat in (Dictionary<int, string>)ViewBag.Categories)
+                                {
+                                    <option value="@cat.Key" selected="@(ViewBag.CurrentCategory == cat.Key ? "selected" : null)">@cat.Value</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="isActive">
+                            <option value="" selected="@(ViewBag.CurrentActive == null ? "selected" : null)">Trạng thái bán</option>
+                            <option value="true" selected="@(ViewBag.CurrentActive == true ? "selected" : null)">Đang bán</option>
+                            <option value="false" selected="@(ViewBag.CurrentActive == false ? "selected" : null)">Ngừng bán</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-filter me-1"></i> Lọc</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sản phẩm Grid -->
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        @if (Model == null || !Model.Any())
+        {
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">Chưa có sản phẩm nào. Hãy thêm sản phẩm mới!</p>
+            </div>
+        }
+        else
+        {
+            foreach (var item in Model)
+            {
+                var priceDisplay = item.Price > 0 ? item.Price.ToString("N0") + "đ" : "0đ";
+                var categoryName = string.IsNullOrEmpty(item.CategoryName) ? "Không xác định" : item.CategoryName;
+
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 product-card rounded-4 overflow-hidden">
+                        <div class="position-relative">
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" class="card-img-top w-100" alt="@item.ProductName" style="height: 200px; object-fit: cover;">
+                            }
+                            else
+                            {
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <i class="fa-regular fa-image text-muted fa-3x"></i>
+                                </div>
+                            }
+                            
+                            @if (item.IsActive)
+                            {
+                                <span class="badge bg-success position-absolute top-0 end-0 m-3 px-3 py-2 rounded-pill shadow-sm">
+                                    <i class="fa-solid fa-check-circle me-1"></i> Đang bán
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary position-absolute top-0 end-0 m-3 px-3 py-2 rounded-pill shadow-sm">
+                                    <i class="fa-solid fa-ban me-1"></i> Ngừng bán
+                                </span>
+                            }
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold text-dark mb-0">@item.ProductName</h5>
+                                <p class="text-danger fw-bold mb-0">@priceDisplay</p>
+                            </div>
+                            <p class="card-text text-muted small mb-3">
+                                <i class="fa-solid fa-tag me-1"></i> Danh mục: @categoryName
+                            </p>
+                            <p class="card-text text-secondary mb-4 flex-grow-1">Đơn vị: @item.Unit</p>
+                            <div class="d-flex justify-content-between mt-auto">
+                                <a href="/Products/Edit/@item.ProductId" class="btn btn-outline-primary btn-sm px-3 rounded-pill">
+                                    <i class="fa-solid fa-pen-to-square me-1"></i> Sửa
+                                </a>
+                                <form action="/Products/Delete/@item.ProductId" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm px-3 rounded-pill">
+                                        <i class="fa-solid fa-trash me-1"></i> Xoá
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<style>
+    /* Thêm chút hiệu ứng tuỳ chỉnh nhẹ nhàng để phù hợp làm Admin Dashboard */
+    .hover-lift {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .product-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .card-title {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+
+

@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "Báo cáo sự cố mới";
+}
+
+<div class="container-fluid py-4 max-w-800">
+    <div class="d-flex align-items-center mb-4">
+        <a href="/Support/Index" class="btn btn-light rounded-circle shadow-sm me-3 d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+            <i class="fa-solid fa-arrow-left text-dark"></i>
+        </a>
+        <h2 class="fw-bold mb-0 text-primary">
+            <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i>Gửi Yêu Cầu Xử Lý Sự Cố
+        </h2>
+    </div>
+
+    <div class="card shadow border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+            <form method="post" action="/Support/Create" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label class="form-label fw-bold"><i class="fa-solid fa-font me-2"></i>Tiêu đề sự cố <span class="text-danger">*</span></label>
+                    <input type="text" name="Title" class="form-control form-control-lg rounded-3 bg-light" required maxlength="200" placeholder="VD: Hư hỏng đường ống nước tại sạp A12" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold"><i class="fa-solid fa-align-left me-2"></i>Mô tả chi tiết <span class="text-danger">*</span></label>
+                    <textarea name="Description" class="form-control rounded-3 bg-light" rows="5" required placeholder="Vui lòng mô tả rõ tình trạng để Ban quản lý chuẩn bị vật tư..."></textarea>
+                </div>
+
+                <div class="mb-5 p-4 border rounded-4 bg-light text-center">
+                    <label class="form-label fw-bold mb-3 d-block"><i class="fa-solid fa-images me-2"></i>Đính kèm hình ảnh hiện trường (Tối đa 3 ảnh)</label>
+                    <input type="file" name="Images" class="form-control bg-white shadow-sm rounded-3" accept="image/*" multiple />
+                </div>
+
+                <div class="d-flex justify-content-end gap-3 border-top pt-4">
+                    <a href="/Support" class="btn btn-light btn-lg px-4 rounded-pill fw-bold">Hủy</a>
+                    <button type="submit" class="btn btn-success btn-lg px-5 rounded-pill fw-bold shadow hover-lift" id="btnSubmit">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Gửi Báo Cáo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .max-w-800 { max-width: 800px; margin: 0 auto; }
+    .hover-lift { transition: transform 0.2s; }
+    .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+</style>

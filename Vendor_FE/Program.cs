@@ -1,7 +1,13 @@
-var builder = WebApplication.CreateBuilder(args);
+﻿var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// ĐĂNG KÝ HTTP CLIENT ĐỂ GỌI API BE
+builder.Services.AddHttpClient("BackendAPI", client =>
+{
+    // Lấy URL từ appsettings.json
+    client.BaseAddress = new Uri(builder.Configuration["ApiUrls:BackendApiBaseUrl"]);
+});
 
 var app = builder.Build();
 
