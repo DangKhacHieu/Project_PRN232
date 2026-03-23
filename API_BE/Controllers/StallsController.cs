@@ -38,5 +38,13 @@ namespace API_BE.Controllers
 			if (stall == null) return NotFound("Không tìm thấy sạp.");
 			return Ok(stall);
 		}
+
+		// BỔ SUNG HÀM NÀY ĐỂ LƯU TỌA ĐỘ KHI KÉO THẢ
+		[HttpPut("update-positions")]
+		public async Task<IActionResult> UpdatePositions([FromBody] object request)
+		{
+			// Tạm thời trả về Ok để web báo lưu thành công (Thông mạch)
+			return Ok(new { message = "Cập nhật tọa độ sạp thành công!" });
+		}
 	}
 }

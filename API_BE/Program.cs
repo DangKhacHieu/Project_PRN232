@@ -93,7 +93,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-app.UseCors("AllowVendorFE");
+//app.UseCors("AllowVendorFE"); // đóng code này để không bị xung đột khi chạy song song 2 project FE nhe (nếu mở ra là cái Admin không chạy đc)
 
 app.UseRouting(); // 1. BỔ SUNG DÒNG NÀY: Phải có Routing trước để hệ thống biết API đang đi đâu
 
