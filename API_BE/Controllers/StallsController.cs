@@ -29,5 +29,14 @@ namespace API_BE.Controllers
 			await _marketService.DeleteStallAsync(id);
 			return Ok(new { Message = "Đã xóa sạp" });
 		}
+
+		// NEW: GET api/stalls/{id} -> trả chi tiết sạp kèm hợp đồng/chủ (nếu có)
+		[HttpGet("{id}")]
+		public async Task<IActionResult> GetStallDetails(int id)
+		{
+			var stall = await _marketService.GetStallDetailsAsync(id);
+			if (stall == null) return NotFound("Không tìm thấy sạp.");
+			return Ok(stall);
+		}
 	}
 }

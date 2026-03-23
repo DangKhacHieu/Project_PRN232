@@ -5,6 +5,7 @@ using DAL.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace BLL.Services.Implementations
@@ -218,10 +219,14 @@ namespace BLL.Services.Implementations
 			return created;
 		}
 
-		public async Task DeleteZoneAsync(int zoneId)
+		public async Task DeleteZoneAsync(int zoneId, bool force = false)
 		{
-			// business rules: you can extend checks here (contracts active, permission, etc.)
-			await _marketRepo.DeleteZoneAsync(zoneId);
+			await _marketRepo.DeleteZoneAsync(zoneId, force);
 		}
-	}
+
+        public async Task<Stall?> GetStallDetailsAsync(int stallId)
+        {
+            return await _marketRepo.GetStallByIdAsync(stallId);
+        }
+    }
 }

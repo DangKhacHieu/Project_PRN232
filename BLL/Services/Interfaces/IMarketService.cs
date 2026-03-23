@@ -22,6 +22,9 @@ namespace BLL.Services.Interfaces
 
 		// NEW: Thêm zone mới kèm theo vị trí các stall
 		Task<Zone> AddZoneWithStallsAsync(CreateZoneWithStallsDTO request);
-		Task DeleteZoneAsync(int zoneId);
+		Task DeleteZoneAsync(int zoneId, bool force = false);
+
+		// NEW: trả chi tiết 1 sạp (kèm hợp đồng + chủ)
+		Task<Stall?> GetStallDetailsAsync(int stallId);
 	}
 }

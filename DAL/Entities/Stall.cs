@@ -42,13 +42,17 @@ namespace DAL.Entities
         [Column("pos_y")]
         public double? PosY { get; set; }
 
-		[Column("width")]
-		public double? Width { get; set; }
+        [Column("width")]
+        public double? Width { get; set; }
 
-		[Column("height")]
-		public double? Height { get; set; }
+        [Column("height")]
+        public double? Height { get; set; }
 
-		[Column("created_at")]
+        // Soft delete flag
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; } = false;
+
+        [Column("created_at")]
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
 
         [ForeignKey("ZoneId")]

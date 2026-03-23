@@ -30,7 +30,7 @@ namespace DAL.Repositories.Interfaces
 		Task UpdateZonesPositionsAsync(List<Zone> updatedZones);
 
 		// NEW: Xóa khu (và các sạp / phụ thuộc bên trong)
-		Task DeleteZoneAsync(int zoneId);
+		Task DeleteZoneAsync(int zoneId, bool force = false);
 
 		// NEW: Thêm zone + stalls cùng lúc
 		Task<Zone> AddZoneWithStallsAsync(Zone zone);

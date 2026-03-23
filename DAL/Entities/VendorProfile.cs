@@ -31,6 +31,9 @@ namespace DAL.Entities
         [Column("created_at")]
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
 
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [ForeignKey("UserId")]
         public virtual User? User { get; set; }
         public virtual ICollection<StallContract> StallContracts { get; set; } = new List<StallContract>();

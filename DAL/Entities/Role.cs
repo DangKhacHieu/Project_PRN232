@@ -20,6 +20,10 @@ namespace DAL.Entities
         [Column("description")]
         public string? Description { get; set; }
 
+        // Add IsDeleted property
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; } = false;
+
         // OData Navigation
         public virtual ICollection<User> Users { get; set; } = new List<User>();
     }

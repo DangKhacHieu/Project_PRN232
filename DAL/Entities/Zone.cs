@@ -42,6 +42,9 @@ namespace DAL.Entities
 		[Column("max_y")]
 		public double? MaxY { get; set; }
 
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; } = false;
+
 		[ForeignKey("MarketId")]
         public virtual Market? Market { get; set; }
         public virtual ICollection<Stall> Stalls { get; set; } = new List<Stall>();

@@ -77,28 +77,33 @@
 
         loadEditMap(currentId);
 
+        // ĐÃ SỬA LẠI HÀM NÀY: Gom $.ajax vào đúng bên trong hàm
         function loadEditMap(id) {
             return new Promise((resolve, reject) => {
                 $('#editPlaceholder').show();
+
                 if (!id) {
                     $('#editPlaceholder').hide();
-                    Swal.fire('Lỗi', 'Không có id chợ trong URL.', 'error');
+                    Swal.fire('Lỗi', 'Không có id chợ trong URL. Kiểm tra query string (?id=...)', 'error');
                     return reject('no-id');
                 }
+
                 $.ajax({
                     url: `${API_BASE}/${id}/layout?t=${new Date().getTime()}`,
                     type: 'GET',
+                    cache: false,
                     success: function (market) {
                         currentMarketData = market;
-                        $('#displayEditTitle').text(market.marketName);
+                        $('#displayEditTitle').text(market.marketName || 'Không tên');
                         $('#editPlaceholder').hide();
                         renderEditMap(market);
-                        resolve();
+                        resolve(market);
                     },
-                    error: function() {
+                    error: function(xhr, status, error) {
                         $('#editPlaceholder').hide();
+                        console.error('loadEditMap error — status:', status, 'error:', error);
                         Swal.fire('Thất bại', 'Không thể lấy sơ đồ từ Server!', 'error');
-                        reject();
+                        reject(error);
                     }
                 });
             });
@@ -155,7 +160,7 @@
         function initInteract() {
             const snapGrid = interact.snappers.grid({ x: SCALE, y: SCALE });
 
-            // 1. Tương tác Sạp
+            // Stall drag / resize - enforce zone bounds
             interact('.draggable-stall')
                 .draggable({
                     modifiers: [ interact.modifiers.snap({ targets: [snapGrid] }) ],
@@ -194,13 +199,17 @@
                             Object.assign(el.style, { width: `${newW}px`, height: `${newH}px` });
                             el.setAttribute('data-w', newW);
                             el.setAttribute('data-h', newH);
-                            markChanged(el.getAttribute('data-id'), x, y, newW, newH);
+
+                            const id = el.getAttribute('data-id');
+                            markChanged(id, x, y, newW, newH);
                         }
                     }
                 })
-                .on('tap', function (event) { openEditStallModal($(event.currentTarget)); });
+                .on('tap', function (event) {
+                    openEditStallModal($(event.currentTarget));
+                });
 
-            // 2. Tương tác Khu vực (Zone)
+            // Zone drag + resize
             interact('.draggable-zone').draggable({
                 listeners: {
                     move(event) {
@@ -233,7 +242,7 @@
                     }
                 }
             }).resizable({
-                edges: { right: true, bottom: true }, // Chỉ cho phép kéo góc dưới phải để mượt hơn
+                edges: { right: true, bottom: true },
                 modifiers: [
                     interact.modifiers.snapSize({ targets: [snapGrid] }),
                     interact.modifiers.restrictSize({ min: { width: SCALE * 2, height: SCALE * 2 } })
@@ -249,11 +258,7 @@
                         let x = parseFloat(target.getAttribute('data-x')) || 0;
                         let y = parseFloat(target.getAttribute('data-y')) || 0;
 
-                        Object.assign(target.style, {
-                            width: `${newWidth}px`,
-                            height: `${newHeight}px`
-                        });
-
+                        Object.assign(target.style, { width: `${newWidth}px`, height: `${newHeight}px` });
                         target.setAttribute('data-w', newWidth);
                         target.setAttribute('data-h', newHeight);
                         markZoneChanged(zoneId, x, y, newWidth, newHeight);
@@ -313,6 +318,16 @@
                     }
                 }
             }
+
+            target.style.transform = `translate(${candidateX}px, ${candidateY}px)`;
+            target.setAttribute('data-x', candidateX);
+            target.setAttribute('data-y', candidateY);
+
+            if (target.classList.contains('draggable-stall')) {
+                const w = parseFloat(target.getAttribute('data-w')) || target.offsetWidth;
+                const h = parseFloat(target.getAttribute('data-h')) || target.offsetHeight;
+                markChanged(target.getAttribute('data-id'), candidateX, candidateY, w, h);
+            }
         }
 
         function markChanged(id, x, y, w, h) {
@@ -336,51 +351,108 @@
 
         function openEditStallModal(stallElement) {
             const id = stallElement.attr('data-id');
-            if(id.includes('new-')) {
-                Swal.fire('Chú ý', 'Đây là sạp mới dựng ảo, bạn cần lưu bản đồ xuống Server trước khi sửa.', 'info');
-                return;
-            }
+            if (!id) return Swal.fire('Lỗi', 'Không tìm thấy ID sạp.', 'error');
 
-            Swal.fire({
-                title: 'Chỉnh sửa Sạp',
-                html: `
-                    <label class="d-block text-start mb-1 mt-2 fw-bold">Mã sạp:</label>
-                    <input id="sw-code" class="form-control" value="${stallElement.text().trim()}">
-                    <label class="d-block text-start mb-1 mt-3 fw-bold">Trạng thái:</label>
-                    <select id="sw-status" class="form-select">
-                        <option value="VACANT">Còn trống (Xanh lá)</option>
-                        <option value="RENTED">Đã cho thuê (Đỏ)</option>
-                        <option value="MAINTENANCE">Đang bảo trì (Vàng)</option>
-                    </select>
-                `,
-                showCancelButton: true, confirmButtonText: 'Cập nhật'
-            }).then(r => {
-                if(r.isConfirmed) {
-                    const newCode = $('#sw-code').val();
-                    const newStatus = $('#sw-status').val();
+            const rawWpx = parseFloat(stallElement.attr('data-w')) || stallElement.width();
+            const rawHpx = parseFloat(stallElement.attr('data-h')) || stallElement.height();
+            const widthM = (rawWpx) / SCALE;
+            const heightM = (rawHpx) / SCALE;
+            const areaM2 = (widthM * heightM).toFixed(2);
+
+            const fetchDetails = (!String(id).startsWith('new-')) ?
+                $.ajax({ url: `${API_BASE.replace('/markets','')}/stalls/${id}`, type: 'GET' }) :
+                $.Deferred().resolve(null);
+
+            fetchDetails.done(function(stallDetails) {
+                let ownerName = '';
+                if (stallDetails && stallDetails.stallContracts && stallDetails.stallContracts.length) {
+                    const active = stallDetails.stallContracts.find(c => (c.status || '').toUpperCase() === 'ACTIVE');
+                    if (active && active.vendor) ownerName = active.vendor.businessName || '';
+                }
+
+                Swal.fire({
+                    title: 'Chỉnh sửa Sạp',
+                    html: `
+                        <label class="d-block text-start mb-1 mt-2 fw-bold">Mã sạp:</label>
+                        <input id="sw-code" class="form-control mb-2" value="${stallElement.text().trim()}">
+
+                        <label class="d-block text-start mb-1 fw-bold">Trạng thái:</label>
+                        <select id="sw-status" class="form-select mb-2">
+                            <option value="VACANT">Còn trống (Xanh lá)</option>
+                            <option value="RENTED">Đã cho thuê (Đỏ)</option>
+                            <option value="MAINTENANCE">Đang bảo trì (Vàng)</option>
+                        </select>
+
+                        <label class="d-block text-start mb-1 fw-bold">Chủ sạp (tên):</label>
+                        <input id="sw-owner" class="form-control mb-2" value="${ownerName}">
+
+                        <label class="d-block text-start mb-1 fw-bold">Rộng (m):</label>
+                        <input id="sw-width" type="number" step="0.01" class="form-control mb-2" value="${widthM}">
+
+                        <label class="d-block text-start mb-1 fw-bold">Dài (m):</label>
+                        <input id="sw-height" type="number" step="0.01" class="form-control mb-2" value="${heightM}">
+
+                        <label class="d-block text-start mb-1 fw-bold">Diện tích (m²):</label>
+                        <input id="sw-area" class="form-control mb-2" value="${areaM2}" readonly>
+                    `,
+                    showCancelButton: true, confirmButtonText: 'Cập nhật',
+                    didOpen: () => {
+                        $('#sw-width, #sw-height').on('input', function() {
+                            const w = parseFloat($('#sw-width').val()) || 0;
+                            const h = parseFloat($('#sw-height').val()) || 0;
+                            $('#sw-area').val((w * h).toFixed(2));
+                        });
+                    },
+                    preConfirm: () => {
+                        return {
+                            stallCode: $('#sw-code').val(),
+                            status: $('#sw-status').val(),
+                            width: parseFloat($('#sw-width').val()) || widthM,
+                            height: parseFloat($('#sw-height').val()) || heightM,
+                            ownerName: $('#sw-owner').val()
+                        };
+                    }
+                }).then(result => {
+                    if (!result.isConfirmed) return;
+                    const payload = { stallCode: result.value.stallCode, status: result.value.status, width: result.value.width, height: result.value.height };
 
                     $.ajax({
-                        url: `${API_BASE}/stalls/${id}`,
-                        type: 'PUT', contentType: 'application/json',
-                        data: JSON.stringify({ stallCode: newCode, status: newStatus }),
+                        url: `${API_BASE}/stalls/${id}`, type: 'PUT', contentType: 'application/json', data: JSON.stringify(payload),
                         success: function() {
-                            stallElement.text(newCode);
-                            let color = newStatus === 'RENTED' ? '#ef4444' : (newStatus === 'MAINTENANCE' ? '#f59e0b' : '#10b981');
+                            stallElement.text(payload.stallCode);
+                            const color = payload.status === 'RENTED' ? '#ef4444' : (payload.status === 'MAINTENANCE' ? '#f59e0b' : '#10b981');
                             stallElement.css('background-color', color);
-                            Swal.fire('Thành công', 'Cập nhật thành công!', 'success');
+
+                            const newWpx = payload.width * SCALE;
+                            const newHpx = payload.height * SCALE;
+                            stallElement.css({ width: `${newWpx}px`, height: `${newHpx}px` });
+                            stallElement.attr('data-w', newWpx);
+                            stallElement.attr('data-h', newHpx);
+
+                            const owner = result.value.ownerName && result.value.ownerName.trim();
+                            if (owner) {
+                                $.ajax({
+                                    url: `${API_BASE.replace('/markets','')}/stalls/${id}/assign-owner`, type: 'POST', contentType: 'application/json',
+                                    data: JSON.stringify({ businessName: owner }),
+                                    success: function() {}, error: function(xhr) { console.warn('Không gán được chủ', xhr.responseText); }
+                                });
+                            }
+                            Swal.fire('Thành công', 'Cập nhật sạp thành công.', 'success');
                         },
-                        error: function() { Swal.fire('Lỗi', 'Không cập nhật được thông tin sạp!', 'error'); }
+                        error: function(xhr) {
+                            const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi khi cập nhật sạp';
+                            Swal.fire('Lỗi', msg, 'error');
+                        }
                     });
-                }
+                });
+            }).fail(function(err) {
+                console.warn('Không lấy chi tiết sạp, mở modal cơ bản.', err);
             });
         }
 
-        // --- BUTTON: THÊM SẠP LẺ ---
+        // --- THÊM SẠP LẺ ---
         $('#btnAddSingleStall').click(function() {
-            if (!currentMarketData || currentMarketData.zones.length === 0) {
-                return Swal.fire('Cảnh báo', 'Phải tạo ít nhất 1 khu vực trước!', 'warning');
-            }
-
+            if (!currentMarketData || currentMarketData.zones.length === 0) return Swal.fire('Cảnh báo', 'Phải tạo ít nhất 1 khu vực trước!', 'warning');
             let zoneOptions = currentMarketData.zones.map(z => `<option value="${z.zoneId}" data-name="${z.zoneName}">${z.zoneName}</option>`).join('');
 
             Swal.fire({
@@ -388,25 +460,21 @@
                 html: `
                     <label class="d-block text-start mb-1 fw-bold text-primary">Chọn Khu vực chứa sạp:</label>
                     <select id="new-zone" class="form-select mb-3">${zoneOptions}</select>
-
                     <label class="d-block text-start mb-1 fw-bold text-primary">Mã sạp (Đã tạo tự động):</label>
                     <input id="new-code" class="form-control mb-3">
-
                     <label class="d-block text-start mb-1 fw-bold text-primary">Kích thước (m):</label>
                     <div class="row">
                         <div class="col"><input id="new-w" type="number" class="form-control" placeholder="Rộng" value="2"></div>
                         <div class="col"><input id="new-h" type="number" class="form-control" placeholder="Dài" value="2"></div>
                     </div>
                 `,
-                showCancelButton: true,
-                confirmButtonText: 'Tạo sạp',
+                showCancelButton: true, confirmButtonText: 'Tạo sạp',
                 didOpen: () => {
                     const updateCode = () => {
                         const selectedOpt = $('#new-zone').find(':selected');
                         $('#new-code').val(generateAutoStallCode(selectedOpt.val(), selectedOpt.attr('data-name')));
                     };
-                    $('#new-zone').change(updateCode);
-                    updateCode();
+                    $('#new-zone').change(updateCode); updateCode();
                 },
                 preConfirm: () => {
                     const code = $('#new-code').val();
@@ -424,16 +492,13 @@
                     const spawnY = targetZone ? targetZone.minY : 0;
 
                     $.ajax({
-                        url: `${API_BASE}/stalls`,
-                        type: 'POST', contentType: 'application/json',
+                        url: `${API_BASE}/stalls`, type: 'POST', contentType: 'application/json',
                         data: JSON.stringify({
                             marketId: parseInt(currentId), zoneId: zIdNum, stallCode: formData.code,
                             posX: spawnX, posY: spawnY, width: parseFloat(formData.w), height: parseFloat(formData.h), status: 'AVAILABLE'
                         }),
                         success: function() {
-                            Swal.close();
-                            Swal.fire('Thành công', 'Đã thêm sạp mới!', 'success');
-                            loadEditMap(currentId);
+                            Swal.close(); Swal.fire('Thành công', 'Đã thêm sạp mới!', 'success'); loadEditMap(currentId);
                         },
                         error: function(xhr) { Swal.fire('Lỗi API', xhr.responseText || 'Lỗi khi lưu sạp!', 'error'); }
                     });
@@ -441,7 +506,7 @@
             });
         });
 
-        // --- BUTTON: TẠO KHU ẢO ---
+        // --- TẠO KHU ẢO & CHIA SẠP ---
         $('#btnAddZone').off('click').on('click', function () {
             Swal.fire({
                 title: 'Tạo Khu & Tự động chia Sạp',
@@ -449,36 +514,19 @@
                     <div class="text-start">
                         <label class="small fw-bold">Tên khu vực:</label>
                         <input id="z-name" class="form-control mb-2" placeholder="Ví dụ: Khu Đồ Tươi">
-
                         <div class="row g-2 mb-2">
-                            <div class="col">
-                                <label class="small fw-bold">Rộng khu (m)</label>
-                                <input id="z-w" type="number" class="form-control" value="10" min="0.5" step="0.5">
-                            </div>
-                            <div class="col">
-                                <label class="small fw-bold">Dài khu (m)</label>
-                                <input id="z-h" type="number" class="form-control" value="8" min="0.5" step="0.5">
-                            </div>
+                            <div class="col"><label class="small fw-bold">Rộng khu (m)</label><input id="z-w" type="number" class="form-control" value="10" min="0.5" step="0.5"></div>
+                            <div class="col"><label class="small fw-bold">Dài khu (m)</label><input id="z-h" type="number" class="form-control" value="8" min="0.5" step="0.5"></div>
                         </div>
-
                         <label class="small fw-bold">Số sạp:</label>
                         <input id="z-count" type="number" class="form-control mb-2" value="8" min="1">
-
                         <div class="row g-2 mb-2">
-                            <div class="col">
-                                <label class="small fw-bold">Kích thước 1 sạp (m) - Rộng</label>
-                                <input id="s-w" type="number" class="form-control" value="2" min="0.1" step="0.1">
-                            </div>
-                            <div class="col">
-                                <label class="small fw-bold">Dài</label>
-                                <input id="s-h" type="number" class="form-control" value="2" min="0.1" step="0.1">
-                            </div>
+                            <div class="col"><label class="small fw-bold">Rộng sạp (m)</label><input id="s-w" type="number" class="form-control" value="2" min="0.1" step="0.1"></div>
+                            <div class="col"><label class="small fw-bold">Dài sạp (m)</label><input id="s-h" type="number" class="form-control" value="2" min="0.1" step="0.1"></div>
                         </div>
-
                         <label class="small fw-bold">Khoảng cách giữa sạp (m)</label>
                         <input id="s-gap" type="number" class="form-control mb-2" value="0.5" min="0" step="0.1">
-
-                        <label class="small fw-bold">Tiền tố mã sạp (ví dụ: A, B, HS) - để trống để auto</label>
+                        <label class="small fw-bold">Tiền tố mã sạp (Để trống auto)</label>
                         <input id="s-prefix" type="text" class="form-control mb-2" placeholder="Tự động nếu để trống">
                     </div>
                 `,
@@ -487,30 +535,20 @@
                 if (!r.isConfirmed) return;
 
                 const name = ($('#z-name').val() || '').toString().trim();
-                const zW = parseFloat($('#z-w').val()) || 0;
-                const zH = parseFloat($('#z-h').val()) || 0;
+                const zW = parseFloat($('#z-w').val()) || 0; const zH = parseFloat($('#z-h').val()) || 0;
                 const count = parseInt($('#z-count').val()) || 0;
-                const sW = parseFloat($('#s-w').val()) || 0;
-                const sH = parseFloat($('#s-h').val()) || 0;
+                const sW = parseFloat($('#s-w').val()) || 0; const sH = parseFloat($('#s-h').val()) || 0;
                 const sGap = parseFloat($('#s-gap').val()) || 0;
                 let prefix = ($('#s-prefix').val() || '').toString().trim();
 
                 if (!name || count <= 0) return Swal.fire('Lỗi', 'Vui lòng nhập tên khu và số sạp hợp lệ.', 'error');
-
-                if (!prefix) {
-                    const clean = name.toUpperCase().replace(/\bKHU\b/g, '').trim();
-                    prefix = clean.split(/\s+/).map(w => w[0] || '').join('') || 'S';
-                }
+                if (!prefix) prefix = name.toUpperCase().replace(/\bKHU\b/g, '').trim().split(/\s+/).map(w => w[0] || '').join('') || 'S';
 
                 const container = $('#mapContainer');
-                const px = (container.scrollLeft() || 0) + 30;
-                const py = (container.scrollTop() || 0) + 30;
+                const px = (container.scrollLeft() || 0) + 30; const py = (container.scrollTop() || 0) + 30;
                 const tempZoneId = `temp-${Date.now()}`;
-
-                const zWidthPx = zW * SCALE;
-                const zHeightPx = zH * SCALE;
-                const zXpx = px;
-                const zYpx = py;
+                const zWidthPx = zW * SCALE; const zHeightPx = zH * SCALE;
+                const zXpx = px; const zYpx = py;
 
                 const zoneDiv = $(`
                     <div class="zone-edit draggable-zone border-danger" id="zone-${tempZoneId}"
@@ -521,8 +559,7 @@
                 `);
                 container.append(zoneDiv);
 
-                let curX = zXpx + 5;
-                let curY = zYpx + 5;
+                let curX = zXpx + 5; let curY = zYpx + 5;
                 for (let i = 1; i <= count; i++) {
                     const tempStallId = `new-${Date.now()}-${i}`;
                     const sCode = `${prefix}-${String(i).padStart(2, '0')}`;
@@ -535,28 +572,22 @@
                         </div>
                     `);
                     container.append(stallDiv);
-
                     curX += (sW * SCALE) + (sGap * SCALE);
-                    if (curX + (sW * SCALE) > (zXpx + zWidthPx - 5)) {
-                        curX = zXpx + 5;
-                        curY += (sH * SCALE) + (sGap * SCALE);
-                    }
+                    if (curX + (sW * SCALE) > (zXpx + zWidthPx - 5)) { curX = zXpx + 5; curY += (sH * SCALE) + (sGap * SCALE); }
                 }
 
                 initInteract();
-
                 container.animate({ scrollLeft: Math.max(0, zXpx - 20), scrollTop: Math.max(0, zYpx - 20) }, 250);
 
                 changedZones[tempZoneId] = {
-                    zoneId: tempZoneId, zoneName: name, minX: zXpx / SCALE, minY: zYpx / SCALE,
-                    width: zW, height: zH, numberOfStalls: count, stallWidth: sW, stallHeight: sH, stallGap: sGap, stallPrefix: prefix
+                    zoneId: tempZoneId, zoneName: name, minX: zXpx / SCALE, minY: zYpx / SCALE, width: zW, height: zH,
+                    numberOfStalls: count, stallWidth: sW, stallHeight: sH, stallGap: sGap, stallPrefix: prefix
                 };
-
                 Swal.fire('Hoàn tất', 'Đã dựng hình ảo. Bấm "LƯU TOÀN BỘ SƠ ĐỒ" để gửi lên Server.', 'info');
             });
         });
 
-        // --- BUTTON: LƯU TOÀN BỘ SƠ ĐỒ ---
+        // --- LƯU TOÀN BỘ SƠ ĐỒ ---
         $('#btnSavePositions').off('click').on('click', async function () {
             const $btn = $(this);
             const stallsData = Object.values(changedStalls);
@@ -588,10 +619,7 @@
                     });
                 }
 
-                const numericZones = zonesData
-                    .filter(z => !String(z.zoneId).startsWith('temp') && !String(z.zoneId).startsWith('new'))
-                    .map(z => ({ ...z, zoneId: parseInt(z.zoneId) }));
-
+                const numericZones = zonesData.filter(z => !String(z.zoneId).startsWith('temp') && !String(z.zoneId).startsWith('new')).map(z => ({ ...z, zoneId: parseInt(z.zoneId) }));
                 if (numericZones.length) {
                     await $.ajax({
                         url: `${API_BASE}/zones/update-positions`, type: 'PUT', cache: false, contentType: 'application/json',
@@ -601,54 +629,64 @@
 
                 changedStalls = {}; changedZones = {};
                 await loadEditMap(currentId);
-                Swal.close();
-                Swal.fire('Thành công', 'Đã lưu thay đổi vào hệ thống!', 'success');
+                Swal.close(); Swal.fire('Thành công', 'Đã lưu thay đổi vào hệ thống!', 'success');
             } catch (err) {
-                console.error('Save error', err);
-                Swal.fire('Lỗi', (err.responseText || err.statusText || 'Lưu không thành công'), 'error');
-            } finally {
-                $btn.prop('disabled', false);
-            }
+                console.error('Save error', err); Swal.fire('Lỗi', (err.responseText || err.statusText || 'Lưu không thành công'), 'error');
+            } finally { $btn.prop('disabled', false); }
         });
 
-        // --- XÓA CHUỘT PHẢI ---
-        $(document).on('contextmenu', '.draggable-stall', function(e) {
+        // --- XÓA CHUỘT PHẢI SẠP ---
+        $(document).on('contextmenu', '.draggable-stall', function (e) {
             e.preventDefault(); e.stopPropagation();
-            const stall = $(this);
-            const id = stall.attr('data-id');
+            const $stall = $(this); const idAttr = $stall.attr('data-id');
+            if (!idAttr) return;
 
-            if (id.includes('new-')) return stall.remove();
+            if (/^(new|temp|tmp)-/.test(String(idAttr))) {
+                $stall.remove(); if (changedStalls && changedStalls[idAttr]) delete changedStalls[idAttr]; return;
+            }
+
+            const stallId = parseInt(idAttr, 10);
+            if (isNaN(stallId)) return;
 
             Swal.fire({
-                title: 'Xóa sạp này?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Xóa'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `${API_BASE}/stalls/${id}`, type: 'DELETE',
-                        success: function() { stall.remove(); Swal.fire('Đã xóa', '', 'success'); },
-                        error: function() { Swal.fire('Lỗi', 'Không thể xóa sạp!', 'error'); }
-                    });
-                }
+                title: 'Xóa sạp?', text: 'Hành động không thể hoàn tác.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa', confirmButtonColor: '#dc3545'
+            }).then(result => {
+                if (!result.isConfirmed) return;
+
+                $.ajax({
+                    url: `${API_BASE.replace('/markets','')}/stalls/${stallId}`, type: 'DELETE',
+                    success: function(resp) { $stall.remove(); delete changedStalls[stallId]; Swal.fire('Đã xóa', resp?.message || '', 'success'); },
+                    error: function(xhr) {
+                        const msg = xhr.responseJSON?.message || xhr.responseText || 'Lỗi khi xóa sạp.';
+                        if (xhr.status === 400 && /ACTIVE/i.test(msg)) {
+                            Swal.fire({
+                                title: 'Sạp có hợp đồng hoạt động', html: `${msg}<br/><b>Bạn có muốn xóa cưỡng chế?</b>`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Xóa cưỡng chế', confirmButtonColor: '#dc3545'
+                            }).then(ch => {
+                                if (!ch.isConfirmed) return;
+                                $.ajax({
+                                    url: `${API_BASE.replace('/markets','')}/stalls/${stallId}?force=true`, type: 'DELETE',
+                                    success: function(resp2) { $stall.remove(); delete changedStalls[stallId]; Swal.fire('Đã xóa (force)', resp2?.message || '', 'success'); },
+                                    error: function(xhr2) { Swal.fire('Lỗi', xhr2.responseText || 'Xóa cưỡng chế thất bại', 'error'); }
+                                });
+                            });
+                        } else { Swal.fire('Lỗi', msg, 'error'); }
+                    }
+                });
             });
         });
 
+        // --- XÓA CHUỘT PHẢI KHU ---
         $(document).on('contextmenu', '.draggable-zone', function (e) {
             e.preventDefault(); e.stopPropagation();
-            const $zone = $(this);
-            const zoneId = $zone.attr('data-id');
-
+            const $zone = $(this); const zoneId = $zone.attr('data-id');
             if (!zoneId) return;
 
-            if (String(zoneId).startsWith('temp')) {
-                $(`.stall-of-zone-${zoneId}`).remove();
-                $zone.remove();
-                if (changedZones[zoneId]) delete changedZones[zoneId];
-                return;
+            if (String(zoneId).startsWith('temp') || String(zoneId).startsWith('new')) {
+                $(`.stall-of-zone-${zoneId}`).remove(); $zone.remove(); if (changedZones && changedZones[zoneId]) delete changedZones[zoneId]; return;
             }
 
             Swal.fire({
-                title: 'Xóa khu vực này?', text: 'Xóa khu sẽ xóa tất cả sạp bên trong!', icon: 'warning',
-                showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Xóa'
+                title: 'Xóa khu vực này?', text: 'Xóa khu sẽ xóa tất cả sạp trong nó. Không thể hoàn tác.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Xóa'
             }).then((res) => {
                 if (!res.isConfirmed) return;
                 $zone.addClass('deleting');
@@ -656,9 +694,8 @@
                 $.ajax({
                     url: `${API_BASE}/zones/${zoneId}`, type: 'DELETE', cache: false,
                     success: function () {
-                        $zone.remove();
-                        $(`.stall-of-zone-${zoneId}`).remove();
-                        if (changedZones[zoneId]) delete changedZones[zoneId];
+                        $zone.remove(); $(`.stall-of-zone-${zoneId}`).remove();
+                        if (changedZones && changedZones[zoneId]) delete changedZones[zoneId];
                         Object.keys(changedStalls).forEach(k => {
                             const el = document.querySelector(`[data-id="${k}"]`);
                             if (el && el.getAttribute('data-zone-id') == zoneId) delete changedStalls[k];
@@ -667,7 +704,12 @@
                     },
                     error: function (xhr) {
                         $zone.removeClass('deleting');
-                        Swal.fire('Lỗi', xhr.responseText || 'Không thể xóa khu này.', 'error');
+                        let message = 'Không thể xóa khu này.';
+                        try {
+                            if (xhr.responseJSON && xhr.responseJSON.message) message = xhr.responseJSON.message;
+                            else if (xhr.responseText) message = xhr.responseText;
+                        } catch (ex) { }
+                        Swal.fire('Lỗi', message, 'error');
                     }
                 });
             });

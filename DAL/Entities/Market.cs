@@ -26,6 +26,9 @@ namespace DAL.Entities
         [Column("created_at")]
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
 
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; } = false;
+
         public virtual ICollection<Zone> Zones { get; set; } = new List<Zone>();
     }
 

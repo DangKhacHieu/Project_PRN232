@@ -178,20 +178,23 @@ namespace API_BE.Controllers
 		}
 
 		[HttpDelete("zones/{id}")]
-		public async Task<IActionResult> DeleteZone(int id)
+		public async Task<IActionResult> DeleteZone(int id, [FromQuery] bool force = false)
 		{
 			try
 			{
-				await _marketService.DeleteZoneAsync(id);
+				await _marketService.DeleteZoneAsync(id, force);
 				return Ok(new { message = "Đã xóa khu thành công!" });
 			}
 			catch (KeyNotFoundException)
 			{
 				return NotFound("Không tìm thấy khu.");
 			}
+			catch (InvalidOperationException ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
 			catch (Exception ex)
 			{
-				// nếu có FK/constraint khác, trả message chi tiết để debug
 				return StatusCode(500, $"Lỗi server: {ex.Message}");
 			}
 		}
