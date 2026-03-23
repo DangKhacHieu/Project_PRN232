@@ -218,5 +218,49 @@ namespace DAL.Repositories.Implementations
 			_context.Zones.Remove(zone);
 			await _context.SaveChangesAsync();
 		}
+
+		public async Task<List<int>> SearchStallIdsAsync(int marketId, string? keyword, string? status)
+		{
+			// 1. Khởi tạo Query và móc nối (Include) các bảng theo đúng sơ đồ ERD của Hải
+			var query = _context.Stalls
+				.Include(s => s.Zone) // Móc bảng Zone để kiểm tra MarketId
+				.Include(s => s.StallContracts) // Móc bảng Hợp đồng
+					.ThenInclude(c => c.Vendor) // Móc từ Hợp đồng ra Vendor Profile
+						.ThenInclude(v => v.User) // Móc từ Vendor ra User để lấy FullName (tuỳ chọn)
+				.Where(s => s.Zone.MarketId == marketId && !s.IsDeleted) // 👉 KHÓA CHẶT TRONG 1 CHỢ
+				.AsQueryable();
+
+			// 2. Lọc theo trạng thái sạp (VACANT, RENTED, MAINTENANCE)
+			if (!string.IsNullOrEmpty(status))
+			{
+				query = query.Where(s => s.Status == status);
+			}
+
+			// 3. TÌM KIẾM "TẤT CẢ TRONG 1" (Mã sạp + Sản phẩm + Tên chủ)
+			if (!string.IsNullOrEmpty(keyword))
+			{
+				var kw = keyword.ToLower();
+				query = query.Where(s =>
+					// - Tìm theo Mã sạp
+					(s.StallCode != null && s.StallCode.ToLower().Contains(kw)) ||
+
+					// - Tìm theo Loại sản phẩm bán (allowed_business_type)
+					(s.AllowedBusinessType != null && s.AllowedBusinessType.ToLower().Contains(kw)) ||
+
+					// - Tìm theo Tên chủ sạp (Chỉ xét hợp đồng đang ACTIVE)
+					s.StallContracts.Any(c => c.Status == "ACTIVE" &&
+						(
+							(c.Vendor.BusinessName != null && c.Vendor.BusinessName.ToLower().Contains(kw)) ||
+							// Nếu Entity Vendor của Hải có liên kết tới User, có thể tìm luôn FullName
+							(c.Vendor.User.FullName != null && c.Vendor.User.FullName.ToLower().Contains(kw))
+						)
+					)
+				);
+			}
+
+			// Cuối cùng, chỉ Select mỗi cái Id để Frontend xử lý làm chớp sáng trên Sơ đồ
+			return await query.Select(s => s.StallId).ToListAsync();
+		}
+
 	}
 }

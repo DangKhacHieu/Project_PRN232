@@ -1,6 +1,7 @@
 ﻿using BLL.DTOs;
 using BLL.Services.Interfaces;
 using DAL.Entities;
+using DAL.Repositories.Implementations;
 using DAL.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -228,5 +229,11 @@ namespace BLL.Services.Implementations
         {
             return await _marketRepo.GetStallByIdAsync(stallId);
         }
-    }
+
+		public async Task<List<int>> SearchStallIdsAsync(int marketId, string? keyword, string? status)
+		{
+			// Gọi thẳng xuống Repository mà Hải đã viết code LINQ lúc nãy
+			return await _marketRepo.SearchStallIdsAsync(marketId, keyword, status);
+		}
+	}
 }

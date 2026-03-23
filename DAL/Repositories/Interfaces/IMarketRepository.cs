@@ -34,5 +34,8 @@ namespace DAL.Repositories.Interfaces
 
 		// NEW: Thêm zone + stalls cùng lúc
 		Task<Zone> AddZoneWithStallsAsync(Zone zone);
+
+		Task<List<int>> SearchStallIdsAsync(int marketId, string? keyword, string? status);
+
 	}
 }

@@ -46,5 +46,20 @@ namespace API_BE.Controllers
 			// Tạm thời trả về Ok để web báo lưu thành công (Thông mạch)
 			return Ok(new { message = "Cập nhật tọa độ sạp thành công!" });
 		}
+
+		[HttpGet("search/{marketId}")]	
+		public async Task<IActionResult> SearchStallsOnMap(int marketId, [FromQuery] string? q, [FromQuery] string? status)
+		{
+			try
+			{
+				// Gọi Service để xử lý
+				var matchingStallIds = await _marketService.SearchStallIdsAsync(marketId, q, status);
+				return Ok(matchingStallIds);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { message = ex.Message });
+			}
+		}
 	}
 }

@@ -26,5 +26,6 @@ namespace BLL.Services.Interfaces
 
 		// NEW: trả chi tiết 1 sạp (kèm hợp đồng + chủ)
 		Task<Stall?> GetStallDetailsAsync(int stallId);
+		Task<List<int>> SearchStallIdsAsync(int marketId, string? keyword, string? status);
 	}
 }
