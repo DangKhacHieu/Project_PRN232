@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +10,7 @@ namespace BLL.Services.Interfaces
     public interface IProductService
     {
         Task<int> CreateProductAsync(int vendorId, ProductCreateRequestDTO request);
-        Task<IEnumerable<ProductResponseDTO>> GetProductsByVendorAsync(int vendorId);
+        Task<IEnumerable<ProductResponseDTO>> GetProductsByVendorAsync(int vendorId, int? categoryId = null, bool? isActive = null, string? search = null);
         Task<bool> UpdateProductAsync(int vendorId, int productId, ProductUpdateRequestDTO request);
         Task<bool> DeleteProductAsync(int vendorId, int productId);
     }

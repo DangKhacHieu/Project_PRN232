@@ -15,13 +15,44 @@ namespace Vendor_FE.Controllers
         }
 
         // GET: Products
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? categoryId, bool? isActive, string? search)
         {
-            var response = await _client.GetAsync("/api/Products");
+            var queryParams = new List<string>();
+            if (categoryId.HasValue) queryParams.Add($"categoryId={categoryId.Value}");
+            if (isActive.HasValue) queryParams.Add($"isActive={isActive.Value}");
+            if (!string.IsNullOrEmpty(search)) queryParams.Add($"search={Uri.EscapeDataString(search)}");
+
+            var queryString = queryParams.Any() ? "?" + string.Join("&", queryParams) : "";
+            var response = await _client.GetAsync($"/api/Products{queryString}");
+
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                var products = JsonSerializer.Deserialize<List<ProductResponseDTO>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var products = JsonSerializer.Deserialize<List<ProductResponseDTO>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<ProductResponseDTO>();
+                
+                // Fetch ALL products from vendor just to get the full list of categories they own
+                var allResponse = await _client.GetAsync("/api/Products");
+                var allCategories = new Dictionary<int, string>();
+                if (allResponse.IsSuccessStatusCode)
+                {
+                    var allContent = await allResponse.Content.ReadAsStringAsync();
+                    var allProducts = JsonSerializer.Deserialize<List<ProductResponseDTO>>(allContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (allProducts != null)
+                    {
+                        foreach (var p in allProducts)
+                        {
+                            if (p.CategoryId.HasValue && !string.IsNullOrEmpty(p.CategoryName))
+                            {
+                                allCategories[p.CategoryId.Value] = p.CategoryName;
+                            }
+                        }
+                    }
+                }
+                ViewBag.Categories = allCategories;
+                ViewBag.CurrentCategory = categoryId;
+                ViewBag.CurrentActive = isActive;
+                ViewBag.CurrentSearch = search;
+
                 return View(products);
             }
             return View(new List<ProductResponseDTO>());

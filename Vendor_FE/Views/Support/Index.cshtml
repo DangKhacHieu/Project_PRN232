@@ -56,9 +56,18 @@
                                     {
                                         <span class="badge bg-warning text-dark">Đang xử lý</span>
                                     }
-                                    else if (item.Status == "DONE")
+                                    else if (item.Status == "RESOLVED")
                                     {
-                                        <span class="badge bg-success">Đã hoàn thành</span>
+                                        <div class="d-flex flex-column align-items-center gap-2">
+                                            <span class="badge bg-info text-dark">Đã khắc phục</span>
+                                            <form action="/Support/Confirm/@item.TicketId" method="post" class="d-inline" onsubmit="return confirm('Xác nhận sự cố đã được xử lý triệt để?');">
+                                                <button type="submit" class="btn btn-sm btn-success rounded-pill"><i class="fa-solid fa-check me-1"></i>Xác nhận xong</button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else if (item.Status == "CLOSED")
+                                    {
+                                        <span class="badge bg-success">Đã đóng</span>
                                     }
                                 </td>
                                 <td>

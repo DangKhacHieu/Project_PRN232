@@ -23,9 +23,22 @@ namespace BLL.Services.Implementations
         }
 
         // 1. LẤY DANH SÁCH
-        public async Task<IEnumerable<ProductResponseDTO>> GetProductsByVendorAsync(int vendorId)
+        public async Task<IEnumerable<ProductResponseDTO>> GetProductsByVendorAsync(int vendorId, int? categoryId = null, bool? isActive = null, string? search = null)
         {
             var products = await _productRepo.GetByVendorIdAsync(vendorId);
+
+            if (categoryId.HasValue)
+            {
+                products = products.Where(p => p.CategoryId == categoryId.Value);
+            }
+            if (isActive.HasValue)
+            {
+                products = products.Where(p => p.IsActive == isActive.Value);
+            }
+            if (!string.IsNullOrEmpty(search))
+            {
+                products = products.Where(p => p.ProductName.Contains(search, StringComparison.OrdinalIgnoreCase));
+            }
 
             // Map Entity -> DTO (Nếu dự án dùng AutoMapper thì sẽ gọn hơn rất nhiều)
             return products.Select(p => new ProductResponseDTO

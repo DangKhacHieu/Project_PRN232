@@ -18,40 +18,40 @@
     <!-- Filter & Search Bar -->
     <div class="card shadow-sm border-0 mb-4 rounded-4">
         <div class="card-body bg-light rounded-4">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="input-group search-group shadow-sm">
-                        <span class="input-group-text bg-white border-end-0">
-                            <i class="fa-solid fa-search text-muted"></i>
-                        </span>
-                        <input type="text" class="form-control border-start-0 ps-0" placeholder="Tìm kiếm sản phẩm...">
+            <form method="get" action="/Products/Index">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group search-group shadow-sm">
+                            <span class="input-group-text bg-white border-end-0">
+                                <i class="fa-solid fa-search text-muted"></i>
+                            </span>
+                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Tìm kiếm sản phẩm..." value="@ViewBag.CurrentSearch">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="categoryId">
+                            <option value="">Tất cả danh mục</option>
+                            @if (ViewBag.Categories != null)
+                            {
+                                foreach (var cat in (Dictionary<int, string>)ViewBag.Categories)
+                                {
+                                    <option value="@cat.Key" selected="@(ViewBag.CurrentCategory == cat.Key ? "selected" : null)">@cat.Value</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="isActive">
+                            <option value="" selected="@(ViewBag.CurrentActive == null ? "selected" : null)">Trạng thái bán</option>
+                            <option value="true" selected="@(ViewBag.CurrentActive == true ? "selected" : null)">Đang bán</option>
+                            <option value="false" selected="@(ViewBag.CurrentActive == false ? "selected" : null)">Ngừng bán</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-filter me-1"></i> Lọc</button>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <select class="form-select">
-                        <option selected>Tất cả danh mục</option>
-                        <option value="1">Thời Trang Nam</option>
-                        <option value="2">Thời Trang Nữ</option>
-                        <option value="3">Thực Phẩm Tươi</option>
-                        <option value="4">Đồ Khô</option>
-                        <option value="5">Giày Dép</option>
-                        <option value="6">Gia dụng</option>
-                        <option value="7">Mỹ Phẩm</option>
-                        <option value="8">Trái Cây</option>
-                        <option value="9">Hoa Tươi</option>
-                        <option value="10">Đồ Uống</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select">
-                        <option selected>Đang bán</option>
-                        <option value="false">Ngừng bán</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button class="btn btn-outline-secondary w-100"><i class="fa-solid fa-filter me-1"></i> Lọc</button>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 

@@ -91,5 +91,26 @@ namespace BLL.Services.Implementations
 
             return true;
         }
+
+        public async Task<bool> ProcessTicketAsync(int ticketId)
+        {
+            var ticket = await _ticketRepo.GetByIdAsync(ticketId);
+            if (ticket == null || ticket.Status != TicketStatus.Pending) return false;
+
+            ticket.Status = TicketStatus.Processing;
+            await _ticketRepo.UpdateAsync(ticket);
+            return true;
+        }
+
+        public async Task<bool> ResolveTicketAsync(int ticketId)
+        {
+            var ticket = await _ticketRepo.GetByIdAsync(ticketId);
+            // Có thể bỏ qua status check nếu admin được linh động, nhưng đúng luồng thì từ Processing -> Resolved
+            if (ticket == null || (ticket.Status != TicketStatus.Processing && ticket.Status != TicketStatus.Pending)) return false;
+
+            ticket.Status = TicketStatus.Resolved;
+            await _ticketRepo.UpdateAsync(ticket);
+            return true;
+        }
     }
 }

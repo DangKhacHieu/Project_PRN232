@@ -1,49 +1,84 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Vendor_FE</title>
+    <title>@ViewData["Title"] - Smart Market Vendor</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Vendor_FE.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Vendor_FE</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
+<body class="bg-light" style="overflow: hidden; height: 100vh;">
+    <div class="d-flex w-100 h-100" id="wrapper">
+        <!-- Sidebar -->
+        <div class="bg-dark text-white shadow-sm" id="sidebar-wrapper">
+            <!-- Branding Header perfectly aligned with Top Navbar -->
+            <div class="sidebar-heading d-flex align-items-center justify-content-center fs-5 fw-bold text-uppercase border-bottom border-secondary m-0" style="height: 73px;">
+                <i class="fa-solid fa-store me-2 text-warning"></i>Smart Market
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+            <div class="list-group list-group-flush mt-2">
+                <a href="/Home/Index" class="list-group-item list-group-item-action bg-transparent text-white fw-medium py-3 px-4 d-flex align-items-center">
+                    <i class="fa-solid fa-gauge-high me-3 fs-5" style="width: 24px; text-align: center;"></i> Bảng điều khiển
+                </a>
+                <a href="/Products/Index" class="list-group-item list-group-item-action bg-transparent text-white fw-medium py-3 px-4 d-flex align-items-center">
+                    <i class="fa-solid fa-box me-3 fs-5" style="width: 24px; text-align: center;"></i> Quản lý Sản phẩm
+                </a>
+                <a href="/Invoice/Index" class="list-group-item list-group-item-action bg-transparent text-white fw-medium py-3 px-4 d-flex align-items-center">
+                    <i class="fa-solid fa-file-invoice-dollar me-3 fs-5" style="width: 24px; text-align: center;"></i> Thanh toán Phụ phí
+                </a>
+                <a href="/Support/Index" class="list-group-item list-group-item-action bg-transparent text-white fw-medium py-3 px-4 d-flex align-items-center">
+                    <i class="fa-solid fa-triangle-exclamation me-3 fs-5" style="width: 24px; text-align: center;"></i> Báo cáo Sự cố
+                </a>
+                <a href="/VendorProfiles/Index" class="list-group-item list-group-item-action bg-transparent text-white fw-medium py-3 px-4 d-flex align-items-center">
+                    <i class="fa-solid fa-shop me-3 fs-5" style="width: 24px; text-align: center;"></i> Thông tin Gian hàng
+                </a>
+            </div>
+        </div>
+        
+        <!-- Page Content -->
+        <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column h-100" style="overflow-y: auto; overflow-x: hidden;">
+            <!-- Top Nav -->
+            <nav class="navbar navbar-expand-lg navbar-white bg-white border-bottom shadow-sm px-4 m-0" style="height: 73px; flex-shrink: 0;">
+                <button class="btn btn-outline-secondary rounded-circle d-flex justify-content-center align-items-center" id="menu-toggle" style="width: 40px; height: 40px; padding: 0;">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="ms-auto d-flex align-items-center">
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center text-dark text-decoration-none" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="https://ui-avatars.com/api/?name=Vendor&background=0D8ABC&color=fff" class="rounded-circle shadow-sm me-2" alt="Avatar" width="38" height="38">
+                            <span class="fw-bold fs-6">A12-Vendor</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item py-2" href="/VendorProfiles/Index"><i class="fa-regular fa-user me-2 text-muted"></i>Tài khoản</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2 text-danger" href="#"><i class="fa-solid fa-right-from-bracket me-2"></i>Đăng xuất</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content Area -->
+            <div class="container-fluid p-4 main-content flex-grow-1">
+                @RenderBody()
+            </div>
+            
+            <footer class="footer text-muted py-3 text-center mt-auto border-top bg-white" style="flex-shrink: 0;">
+                <div class="container">
+                    &copy; 2026 - Smart Market Vendor Portal v1.0
+                </div>
+            </footer>
+        </div>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Vendor_FE - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        document.getElementById("menu-toggle").addEventListener("click", function (e) {
+            e.preventDefault();
+            document.getElementById("wrapper").classList.toggle("toggled");
+        });
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

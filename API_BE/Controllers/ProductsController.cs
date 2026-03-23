@@ -55,13 +55,13 @@ namespace API_BE.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetMyProducts()
+        public async Task<IActionResult> GetMyProducts([FromQuery] int? categoryId, [FromQuery] bool? isActive, [FromQuery] string? search)
         {
             int vendorId = GetVendorIdFromToken(); 
             if (vendorId <= 0) return Unauthorized();
 
 
-            var products = await _productService.GetProductsByVendorAsync(vendorId);
+            var products = await _productService.GetProductsByVendorAsync(vendorId, categoryId, isActive, search);
             return Ok(products);
         }
 

@@ -43,7 +43,7 @@ namespace DAL.Entities
     {
         public const string Pending = "PENDING";
         public const string Processing = "PROCESSING";
-        public const string Resolved = "RESOLVED"; // Admin báo đã sửa xong
-        public const string Closed = "CLOSED";     // Vendor xác nhận hài lòng
+        public const string Resolved = "RESOLVED"; 
+        public const string Closed = "CLOSED";    
     }
 }

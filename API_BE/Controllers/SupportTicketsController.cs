@@ -56,5 +56,21 @@ namespace API_BE.Controllers
             //return claim != null ? int.Parse(claim.Value) : 0;
             return 4;
         }
+
+        [HttpPut("{id}/process")]
+        public async Task<IActionResult> ProcessTicket(int id)
+        {
+            var result = await _ticketService.ProcessTicketAsync(id);
+            if (result) return Ok(new { Message = "Đã chuyển trạng thái sang Đang xử lý!" });
+            return BadRequest("Không thể xử lý ticket này.");
+        }
+
+        [HttpPut("{id}/resolve")]
+        public async Task<IActionResult> ResolveTicket(int id)
+        {
+            var result = await _ticketService.ResolveTicketAsync(id);
+            if (result) return Ok(new { Message = "Sự cố đã được giải quyết!" });
+            return BadRequest("Không thể cập nhật trạng thái đã giải quyết.");
+        }
     }
 }

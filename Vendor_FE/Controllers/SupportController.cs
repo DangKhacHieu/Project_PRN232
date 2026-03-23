@@ -66,5 +66,24 @@ namespace Vendor_FE.Controllers
             TempData["ErrorMessage"] = "Có lỗi xảy ra khi gửi báo cáo!";
             return RedirectToAction(nameof(Index)); // Or return View with error
         }
+
+        [HttpPost]
+        public async Task<IActionResult> Confirm(int id)
+        {
+            var client = _httpClientFactory.CreateClient("BackendAPI");
+            var content = new StringContent(""); // Empty body for PUT
+            var response = await client.PutAsync($"api/SupportTickets/{id}/confirm", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = "Xác nhận sự cố đã được xử lý xong!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Không thể xác nhận hoặc có lỗi xảy ra.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }
