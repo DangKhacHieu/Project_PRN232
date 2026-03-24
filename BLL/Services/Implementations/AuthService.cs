@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
@@ -77,25 +77,31 @@ namespace BLL.Services.Implementations
                 VendorId = user.VendorProfile?.VendorId,
                 FullName = user.FullName,
                 Role = user.Role?.RoleName,
-                RoleId = user.RoleId 
+                RoleId = user.RoleId
             };
         }
 
         public async Task<RegisterResult> RegisterAsync(RegisterRequest request)
         {
-            // basic validation
+            request.FullName = request.FullName?.Trim() ?? string.Empty;
+            request.BusinessName = request.BusinessName?.Trim() ?? string.Empty;
+            request.Email = request.Email?.Trim() ?? string.Empty;
+            request.Phone = request.Phone?.Trim() ?? string.Empty;
+            request.Password = request.Password?.Trim() ?? string.Empty;
+
             if (string.IsNullOrWhiteSpace(request.FullName) ||
-                string.IsNullOrWhiteSpace(request.Password) ||
-                (string.IsNullOrWhiteSpace(request.Email) && string.IsNullOrWhiteSpace(request.Phone)))
+                string.IsNullOrWhiteSpace(request.BusinessName) ||
+                string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.Phone) ||
+                string.IsNullOrWhiteSpace(request.Password))
             {
-                return new RegisterResult { Success = false, Message = "FullName, password and either email or phone are required." };
+                return new RegisterResult { Success = false, Message = "Vui lòng nhập đầy đủ thông tin đăng ký." };
             }
 
-            // check existence
-            var exists = await _userRepository.ExistsByEmailOrPhoneAsync(request.Email ?? string.Empty, request.Phone ?? string.Empty);
-            if (exists)
+            if (await _userRepository.ExistsByEmailAsync(request.Email) ||
+                await _userRepository.ExistsByPhoneAsync(request.Phone))
             {
-                return new RegisterResult { Success = false, Message = "Email or phone already registered." };
+                return new RegisterResult { Success = false, Message = "Tài khoản đã tồn tại." };
             }
 
             // determine RoleId for vendor
