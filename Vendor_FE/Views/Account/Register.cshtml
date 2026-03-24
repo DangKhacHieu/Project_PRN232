@@ -33,6 +33,7 @@
             }
 
             <form asp-action="Register" method="post" class="row g-3">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 @Html.AntiForgeryToken()
 
                 <div class="col-md-6">
@@ -59,10 +60,16 @@
                     <span asp-validation-for="Phone" class="text-danger small"></span>
                 </div>
 
-                <div class="col-12">
+                <div class="col-md-6">
                     <label asp-for="Password" class="form-label fw-semibold">Mật khẩu</label>
                     <input asp-for="Password" type="password" class="form-control auth-control" placeholder="Tạo mật khẩu" />
                     <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="ConfirmPassword" class="form-label fw-semibold">Xác nhận mật khẩu</label>
+                    <input asp-for="ConfirmPassword" type="password" class="form-control auth-control" placeholder="Nhập lại mật khẩu" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                 </div>
 
                 <div class="col-12 d-grid mt-2">
@@ -78,7 +85,6 @@
             </form>
         </div>
     </div>
-</div>
 
     <style>
         body {

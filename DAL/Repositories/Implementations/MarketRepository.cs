@@ -25,16 +25,52 @@ namespace DAL.Repositories.Implementations
 
 		public async Task<Market> CreateFullMarketAsync(Market market)
 		{
+			using var transaction = await _context.Database.BeginTransactionAsync();
 			try
 			{
+				var zones = market.Zones?.ToList();
+				if (zones != null)
+				{
+					market.Zones = new List<Zone>();
+				}
+
 				await _context.Markets.AddAsync(market);
 				await _context.SaveChangesAsync();
+
+				if (zones != null && zones.Any())
+				{
+					foreach (var zone in zones)
+					{
+						zone.MarketId = market.MarketId;
+						if (zone.Stalls != null)
+						{
+							foreach (var stall in zone.Stalls)
+							{
+								if (stall.StallCode != null && stall.StallCode.Contains("{MARKET_ID}"))
+								{
+									stall.StallCode = stall.StallCode.Replace("{MARKET_ID}", market.MarketId.ToString());
+								}
+							}
+						}
+					}
+					market.Zones = zones;
+					await _context.Zones.AddRangeAsync(zones);
+					await _context.SaveChangesAsync();
+				}
+
+				await transaction.CommitAsync();
 				return market;
 			}
 			catch (DbUpdateException ex)
 			{
+				await transaction.RollbackAsync();
 				string exactError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
 				throw new Exception($"LỖI TỪ DATABASE SQL: {exactError}");
+			}
+			catch (Exception)
+			{
+				await transaction.RollbackAsync();
+				throw;
 			}
 		}
 
@@ -68,16 +104,20 @@ namespace DAL.Repositories.Implementations
 		// Thực thi trong MarketRepository
 		public async Task<Market?> GetMarketWithDetailsAsync(int marketId)
 		{
-			// Lấy Market + Zones + Stalls
+			// Lấy Market + Zones + Stalls + Vendor + User
 			var market = await _context.Markets
+				.AsNoTracking()
 				.Include(m => m.Zones)
 					.ThenInclude(z => z.Stalls)
+						.ThenInclude(s => s.StallContracts)
+							.ThenInclude(c => c.Vendor)
+								.ThenInclude(v => v.User)
 				.FirstOrDefaultAsync(m => m.MarketId == marketId);
 
 			if (market == null) return null;
 
 			// Loại bỏ các sạp bị soft-deleted trước khi trả cho FE
-			foreach (var zone in market.Zones)	
+			foreach (var zone in market.Zones)
 			{
 				zone.Stalls = zone.Stalls.Where(s => !s.IsDeleted).ToList();
 			}
@@ -103,7 +143,7 @@ namespace DAL.Repositories.Implementations
 		// Soft-delete: set IsDeleted = true
 		public async Task DeleteStallAsync(int stallId)
 		{
-			var stall = await _context.Stalls.FindAsync(	stallId);
+			var stall = await _context.Stalls.FindAsync(stallId);
 			if (stall != null)
 			{
 				// Only mark as deleted; do not change Status to a value that violates DB CHECK constraint
@@ -175,9 +215,17 @@ namespace DAL.Repositories.Implementations
 
 		public async Task<Zone> AddZoneWithStallsAsync(Zone zone)
 		{
-			await _context.Zones.AddAsync(zone);
-			await _context.SaveChangesAsync();
-			return zone;
+			try
+			{
+				await _context.Zones.AddAsync(zone);
+				await _context.SaveChangesAsync();
+				return zone;
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+			{
+				string exactError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+				throw new Exception($"LỖI TỪ DATABASE SQL: {exactError}");
+			}
 		}
 
 		// safe delete zone implementation (if present)

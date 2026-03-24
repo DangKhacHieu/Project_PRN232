@@ -15,5 +15,7 @@ namespace BLL.DTOs
 		public double PosX { get; set; } // Tọa độ X ngay tại vị trí admin click chuột
 		public double PosY { get; set; } // Tọa độ Y ngay tại vị trí admin click chuột
 		public string? AllowedBusinessType { get; set; }
+		public string? MarketName { get; set; }
+		public string? BusinessName { get; set; }
 	}
 }

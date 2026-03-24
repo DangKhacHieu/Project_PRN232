@@ -1,0 +1,34 @@
+﻿/* CSS Khóa tĩnh: Bỏ hoàn toàn cursor: grab và các hiệu ứng di chuyển */
+.zone-box {
+    position: absolute;
+    border: 2px solid #17a2b8;
+    background-color: rgba(23, 162, 184, 0.05);
+    transition: all 0.4s ease; /* Thêm hiệu ứng mờ cho mượt */
+}
+
+.zone-title {
+    position: absolute;
+    top: -25px;
+    left: 0;
+    font-weight: bold;
+    color: #17a2b8;
+}
+
+.stall-box {
+    position: absolute;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    cursor: pointer; /* Chuột chuyển thành hình bàn tay để báo hiệu có thể click xem */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng phình to nảy nảy */
+}
+
+    .stall-box:hover {
+        transform-origin: center; /* Hiệu ứng phình to nhẹ khi rê chuột vào */
+        z-index: 99 !important;
+        filter: brightness(1.2);
+    }

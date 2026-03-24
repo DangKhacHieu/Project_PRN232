@@ -19,11 +19,13 @@ namespace DAL.Repositories.Implementations
         {
             if (string.IsNullOrWhiteSpace(identifier)) return null;
 
+            identifier = identifier.Trim();
+
             return await _db.Users
                 .Include(u => u.VendorProfile)
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u =>
-                    (u.Email != null && u.Email == identifier) ||
+                    (u.Email != null && u.Email.ToLower() == identifier.ToLower()) ||
                     (u.Phone != null && u.Phone == identifier));
         }
 
@@ -37,9 +39,28 @@ namespace DAL.Repositories.Implementations
 
         public async Task<bool> ExistsByEmailOrPhoneAsync(string email, string phone)
         {
+            email = email?.Trim() ?? string.Empty;
+            phone = phone?.Trim() ?? string.Empty;
+
             return await _db.Users.AnyAsync(u =>
-                (!string.IsNullOrEmpty(email) && u.Email == email) ||
+                (!string.IsNullOrEmpty(email) && u.Email != null && u.Email.ToLower() == email.ToLower()) ||
                 (!string.IsNullOrEmpty(phone) && u.Phone == phone));
+        }
+
+        public async Task<bool> ExistsByEmailAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            email = email.Trim().ToLower();
+
+            return await _db.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == email);
+        }
+
+        public async Task<bool> ExistsByPhoneAsync(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return false;
+            phone = phone.Trim();
+
+            return await _db.Users.AnyAsync(u => u.Phone == phone);
         }
 
         public async Task<User> CreateAsync(User user)

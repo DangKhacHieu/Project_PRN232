@@ -10,27 +10,34 @@ $(document).ready(function () {
     $('#btnAddZone').click(function () {
         zoneCounter++;
         const newZoneHtml = `
-            <div class="zone-form border p-3 mb-3 bg-light rounded">
-                <h5 class="zone-title-label">Khu ${zoneCounter}</h5>
-                <div class="form-group mb-1"><label>Tên khu:</label><input type="text" class="form-control z-name" value="Khu Mới ${zoneCounter}" /></div>
-                <div class="form-group mb-1"><label>Tiền tố mã:</label><input type="text" class="form-control z-prefix" value="K${zoneCounter}" /></div>
-                <div class="row">
-                    <div class="col-6 form-group mb-1"><label>Tổng sạp:</label><input type="number" class="form-control z-num" value="8" /></div>
-                    <div class="col-6 form-group mb-1"><label>Số cột:</label><input type="number" class="form-control z-col" value="4" /></div>
+                <div class="zone-form border p-3 mb-3 bg-light rounded">
+                    <h5 class="zone-title-label">Khu ${zoneCounter}</h5>
+                    <div class="form-group mb-1"><label>Tên khu:</label><input type="text" class="form-control z-name" value="Khu Mới ${zoneCounter}" /></div>
+                    <div class="form-group mb-1"><label>Tiền tố mã:</label><input type="text" class="form-control z-prefix" value="KM" /></div>
+                    <div class="row">
+                        <div class="col-6 form-group mb-1"><label>Tổng sạp:</label><input type="number" class="form-control z-num" value="8" /></div>
+                        <div class="col-6 form-group mb-1"><label>Số cột:</label><input type="number" class="form-control z-col" value="4" /></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 form-group mb-1"><label>Rộng(m):</label><input type="number" class="form-control z-w" value="3" /></div>
+                        <div class="col-4 form-group mb-1"><label>Dài(m):</label><input type="number" class="form-control z-h" value="3" /></div>
+                        <div class="col-4 form-group mb-1"><label>Lối đi(m):</label><input type="number" class="form-control z-gap" value="1" /></div>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm w-100 mt-2 btn-remove-zone">Xóa Khu Này</button>
                 </div>
-                <div class="row">
-                    <div class="col-4 form-group mb-1"><label>Rộng(m):</label><input type="number" class="form-control z-w" value="3" /></div>
-                    <div class="col-4 form-group mb-1"><label>Dài(m):</label><input type="number" class="form-control z-h" value="3" /></div>
-                    <div class="col-4 form-group mb-1"><label>Lối đi(m):</label><input type="number" class="form-control z-gap" value="1" /></div>
-                </div>
-                <button type="button" class="btn btn-danger btn-sm w-100 mt-2 btn-remove-zone">Xóa Khu Này</button>
-            </div>
-        `;
+            `;
         $('#zonesContainer').append(newZoneHtml);
     });
 
     $(document).on('click', '.btn-remove-zone', function () {
         $(this).closest('.zone-form').remove();
+    });
+
+    $(document).on('input', '.z-name', function () {
+        const name = $(this).val() || '';
+        const cleanName = name.toUpperCase().replace(/\bKHU\b/g, "").trim();
+        const prefix = cleanName.split(/\s+/).map(word => word.charAt(0) || '').join('');
+        $(this).closest('.zone-form').find('.z-prefix').val(prefix || 'K');
     });
 
     // ==========================================
@@ -112,35 +119,35 @@ $(document).ready(function () {
 
         market.zones.forEach((zone, index) => {
             const zoneDiv = $(`
-                <div class="zone-box draggable-zone" id="zone-${index}" 
-                     data-x="${zone.minX * scale}" 
-                     data-y="${zone.minY * scale}"
-                     style="
-                        left: 0px; top: 0px; 
-                        transform: translate(${zone.minX * scale}px, ${zone.minY * scale}px);
-                        width: ${(zone.maxX - zone.minX) * scale}px; 
-                        height: ${(zone.maxY - zone.minY) * scale}px;
-                        cursor: grab; z-index: 1;">
-                    <span class="zone-title" style="pointer-events: none;">${zone.zoneName} (Nháy đúp)</span>
-                </div>
-            `);
+                    <div class="zone-box draggable-zone" id="zone-${index}" 
+                        data-x="${zone.minX * scale}" 
+                        data-y="${zone.minY * scale}"
+                        style="
+                            left: 0px; top: 0px; 
+                            transform: translate(${zone.minX * scale}px, ${zone.minY * scale}px);
+                            width: ${(zone.maxX - zone.minX) * scale}px; 
+                            height: ${(zone.maxY - zone.minY) * scale}px;
+                            cursor: grab; z-index: 1;">
+                        <span class="zone-title" style="pointer-events: none;">${zone.zoneName} (Nháy đúp)</span>
+                    </div>
+                `);
             container.append(zoneDiv);
 
             zone.stalls.forEach(stall => {
                 const stallDiv = $(`
-                    <div class="stall-box draggable stall-of-zone-${index}" 
-                         data-id="${stall.stallId}"
-                         data-x="${stall.posX * scale}" 
-                         data-y="${stall.posY * scale}"
-                         style="
-                            display: none; left: 0px; top: 0px;
-                            transform: translate(${stall.posX * scale}px, ${stall.posY * scale}px);
-                            width: ${stall.width * scale}px; 
-                            height: ${stall.height * scale}px;
-                            z-index: 10;">
-                        ${stall.stallCode}
-                    </div>
-                `);
+                        <div class="stall-box draggable stall-of-zone-${index}" 
+                            data-id="${stall.stallId}"
+                            data-x="${stall.posX * scale}" 
+                            data-y="${stall.posY * scale}"
+                            style="
+                                display: none; left: 0px; top: 0px;
+                                transform: translate(${stall.posX * scale}px, ${stall.posY * scale}px);
+                                width: ${stall.width * scale}px; 
+                                height: ${stall.height * scale}px;
+                                z-index: 10;">
+                            ${stall.stallCode}
+                        </div>
+                    `);
                 container.append(stallDiv);
             });
 
@@ -284,18 +291,18 @@ $(document).ready(function () {
         Swal.fire({
             title: `Quản lý Sạp`,
             html: `
-                <div style="text-align: left;">
-                    <label>Mã sạp:</label>
-                    <input id="swal-stallCode" class="swal2-input" style="margin-top: 0;" value="${currentCode}">
-                    
-                    <label class="mt-3">Trạng thái:</label>
-                    <select id="swal-status" class="swal2-input" style="margin-top: 0;">
-                        <option value="VACANT">🟢 Đang trống</option>
-                        <option value="RENTED">🔴 Đã cho thuê</option>
-                        <option value="MAINTENANCE">🟡 Bảo trì</option>
-                    </select>
-                </div>
-            `,
+                    <div style="text-align: left;">
+                        <label>Mã sạp (Tên sạp):</label>
+                        <input id="swal-stallCode" class="swal2-input" style="margin-top: 0;" value="${currentCode}" disabled>
+                        
+                        <label class="mt-3">Trạng thái:</label>
+                        <select id="swal-status" class="swal2-input" style="margin-top: 0;" disabled>
+                            <option value="VACANT">🟢 Đang trống</option>
+                            <option value="RENTED">🔴 Đã cho thuê</option>
+                            <option value="MAINTENANCE">🟡 Bảo trì</option>
+                        </select>
+                    </div>
+                `,
             showCancelButton: true,
             showDenyButton: true,
             confirmButtonText: '💾 Lưu thông tin',
