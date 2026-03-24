@@ -56,6 +56,13 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 
+// Finance/Admin Dependencies
+builder.Services.AddScoped<IUtilityReadingRepository, UtilityReadingRepository>();
+builder.Services.AddScoped<IUtilityReadingService, UtilityReadingService>();
+builder.Services.AddScoped<IFeeConfigRepository, FeeConfigRepository>();
+builder.Services.AddScoped<IStallContractRepository, StallContractRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+
 // Quan trọng: PhotoService cần Cloudinary đã đăng ký ở mục 3
 builder.Services.AddScoped<IPhotoService, PhotoService>();
 
@@ -95,7 +102,8 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = !string.IsNullOrEmpty(audience),
         ValidAudience = audience,
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero // Loại bỏ thời gian trễ mặc định của token
+        ClockSkew = TimeSpan.Zero, // Loại bỏ thời gian trễ mặc định của token
+        RoleClaimType = "role"
     };
 });
 

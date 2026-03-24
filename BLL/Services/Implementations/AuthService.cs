@@ -77,7 +77,7 @@ namespace BLL.Services.Implementations
                 VendorId = user.VendorProfile?.VendorId,
                 FullName = user.FullName,
                 Role = user.Role?.RoleName,
-                RoleId = user.RoleId 
+                RoleId = user.RoleId
             };
         }
 
@@ -141,8 +141,10 @@ namespace BLL.Services.Implementations
             }
             catch (Exception ex)
             {
-                // log ex in real app
-                return new RegisterResult { Success = false, Message = "Registration failed: " + ex.Message };
+                // include inner exception message for diagnostics (safe for dev)
+                var inner = ex.InnerException?.Message;
+                var msg = "Registration failed: " + ex.Message + (string.IsNullOrWhiteSpace(inner) ? "" : " | Inner: " + inner);
+                return new RegisterResult { Success = false, Message = msg };
             }
         }
 

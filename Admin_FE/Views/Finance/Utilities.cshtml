@@ -1,0 +1,194 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Quản lý Chỉ số Điện / Nước";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Chỉ số Điện / Nước</h3>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button" role="tab" aria-controls="manual" aria-selected="true">Ghi thủ công</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="excel-tab" data-bs-toggle="tab" data-bs-target="#excel" type="button" role="tab" aria-controls="excel" aria-selected="false">Import từ Excel</button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="manual" role="tabpanel" aria-labelledby="manual-tab">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form id="formManual">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Mã Sạp (Stall ID)</label>
+                                <select class="form-select" id="stallId" required>
+                                    <option value="">-- Chọn Sạp --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tháng</label>
+                                <input type="number" class="form-control" id="month" min="1" max="12" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Năm</label>
+                                <input type="number" class="form-control" id="year" min="2000" required />
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Chỉ số Điện MỚI</label>
+                                <input type="number" class="form-control" id="elecNew" step="0.01" required />
+                                <small class="text-muted">Chỉ số cũ sẽ tự động lấy từ tháng trước.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Chỉ số Nước MỚI</label>
+                                <input type="number" class="form-control" id="waterNew" step="0.01" required />
+                                <small class="text-muted">Chỉ số cũ sẽ tự động lấy từ tháng trước.</small>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="btnSaveManual">Lưu Chỉ Số</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-pane fade" id="excel" role="tabpanel" aria-labelledby="excel-tab">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form id="formExcel" enctype="multipart/form-data">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Tháng</label>
+                                <input type="number" class="form-control" id="excelMonth" min="1" max="12" required />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Năm</label>
+                                <input type="number" class="form-control" id="excelYear" min="2000" required />
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">File Excel (.xlsx)</label>
+                            <input class="form-control" type="file" id="excelFile" accept=".xlsx" required>
+                        </div>
+                        <button type="submit" class="btn btn-success" id="btnUploadExcel">Import File Tự Động</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const API_BASE = 'https://localhost:7169/api';
+
+        $(document).ready(function () {
+            let d = new Date();
+            $('#month, #excelMonth').val(d.getMonth() + 1);
+            $('#year, #excelYear').val(d.getFullYear());
+
+            function getAuthHeaders() {
+                let token = localStorage.getItem("token");
+                let headers = {};
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+                return headers;
+            }
+
+            function loadActiveStalls() {
+                let token = localStorage.getItem("token") || "";
+                $.ajax({
+                    url: `${API_BASE}/UtilityReadings/all-stalls`,
+                    type: 'GET',
+                    headers: getAuthHeaders(),
+                    success: function (res) {
+                        let html = '<option value="">-- Chọn Sạp --</option>';
+                        res.forEach(c => {
+                            html += `<option value="${c.stallId}">[Sạp ${c.stallCode}] - Trạng thái: ${c.status}</option>`;
+                        });
+                        $('#stallId').html(html);
+                    },
+                    error: function (xhr) {
+                        console.error("Could not load stalls", xhr);
+                    }
+                });
+            }
+
+            // Gọi thử nếu có token
+            loadActiveStalls();
+
+            $('#formManual').submit(function (e) {
+                e.preventDefault();
+                $('#btnSaveManual').prop('disabled', true).text('Đang lưu...');
+
+                const data = {
+                    stallId: parseInt($('#stallId').val()),
+                    month: parseInt($('#month').val()),
+                    year: parseInt($('#year').val()),
+                    electricityNew: parseFloat($('#elecNew').val()),
+                    waterNew: parseFloat($('#waterNew').val())
+                };
+
+                // NOTE: Cần Auth Token nếu API_BE có [Authorize]
+                let token = localStorage.getItem("token") || "";
+
+                $.ajax({
+                    url: `${API_BASE}/UtilityReadings`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    headers: getAuthHeaders(),
+                    data: JSON.stringify(data),
+                    success: function (res) {
+                        $('#btnSaveManual').prop('disabled', false).text('Lưu Chỉ Số');
+                        Swal.fire('Thành công', 'Đã lưu chỉ số điện nước.', 'success');
+                        $('#formManual')[0].reset();
+                    },
+                    error: function (xhr) {
+                        $('#btnSaveManual').prop('disabled', false).text('Lưu Chỉ Số');
+                        const msg = xhr.responseJSON?.message || 'Có lỗi xảy ra.';
+                        Swal.fire('Lỗi', msg, 'error');
+                    }
+                });
+            });
+
+            $('#formExcel').submit(function (e) {
+                e.preventDefault();
+                $('#btnUploadExcel').prop('disabled', true).text('Đang xử lý...');
+
+                let formData = new FormData();
+                let file = $('#excelFile')[0].files[0];
+                formData.append('file', file);
+                
+                let month = $('#excelMonth').val();
+                let year = $('#excelYear').val();
+
+                let token = localStorage.getItem("token") || "";
+
+                $.ajax({
+                    url: `${API_BASE}/UtilityReadings/import-excel?month=${month}&year=${year}`,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: getAuthHeaders(),
+                    success: function (res) {
+                        $('#btnUploadExcel').prop('disabled', false).text('Import File Tự Động');
+                        Swal.fire('Thành công', res.message || 'Đã import thành công.', 'success');
+                        $('#formExcel')[0].reset();
+                    },
+                    error: function (xhr) {
+                        $('#btnUploadExcel').prop('disabled', false).text('Import File Tự Động');
+                        const msg = xhr.responseJSON?.message || xhr.responseText || 'Có lỗi xảy ra.';
+                        Swal.fire('Lỗi', msg, 'error');
+                    }
+                });
+            });
+        });
+    </script>
+}

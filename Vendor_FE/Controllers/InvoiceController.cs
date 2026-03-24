@@ -11,6 +11,7 @@ using iText.Kernel.Font;
 using iText.IO.Font;
 using Microsoft.AspNetCore.Hosting;
 using Vendor_FE.DTOs;
+using System.Net.Http.Headers;
 
 namespace Vendor_FE.Controllers
 {
@@ -27,7 +28,12 @@ namespace Vendor_FE.Controllers
 
         public async Task<IActionResult> Index()
         {
+            var token = Request.Cookies["VendorAuth"];
+            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Account");
+
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
             var response = await client.GetAsync("api/Invoices");
             var invoices = new List<InvoiceResponseDTO>();
             if (response.IsSuccessStatusCode)
@@ -41,7 +47,12 @@ namespace Vendor_FE.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
+            var token = Request.Cookies["VendorAuth"];
+            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Account");
+
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
             var response = await client.GetAsync($"api/Invoices/{id}/details");
             if (!response.IsSuccessStatusCode) return RedirectToAction(nameof(Index));
 
@@ -57,13 +68,11 @@ namespace Vendor_FE.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportPdf(int id)
         {
-            var token = Request.Headers["Authorization"].ToString();
+            var token = Request.Cookies["VendorAuth"];
+            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Account");
 
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Add("Authorization", token);
-            }
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var response = await client.GetAsync($"api/Invoices/{id}/details");
             if (!response.IsSuccessStatusCode)
@@ -185,7 +194,12 @@ namespace Vendor_FE.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPaymentQr(int id)
         {
+            var token = Request.Cookies["VendorAuth"];
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
             var response = await client.GetAsync($"api/Invoices/{id}/generate-qr");
             if (response.IsSuccessStatusCode)
             {

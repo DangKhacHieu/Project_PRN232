@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -28,6 +28,7 @@ namespace Vendor_FE.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
+            int? userId = null;
             if (!id.HasValue)
             {
                 try
@@ -45,6 +46,14 @@ namespace Vendor_FE.Controllers
                             else if (claim.ValueKind == JsonValueKind.String && int.TryParse(claim.GetString(), out var vid2))
                                 id = vid2;
                         }
+
+                        if (doc.RootElement.TryGetProperty("sub", out var subClaim))
+                        {
+                            if (subClaim.ValueKind == JsonValueKind.Number && subClaim.TryGetInt32(out var uid))
+                                userId = uid;
+                            else if (subClaim.ValueKind == JsonValueKind.String && int.TryParse(subClaim.GetString(), out var uid2))
+                                userId = uid2;
+                        }
                     }
                 }
                 catch
@@ -53,9 +62,9 @@ namespace Vendor_FE.Controllers
                 }
             }
 
-            if (!id.HasValue)
+            if (!id.HasValue && !userId.HasValue)
             {
-                ModelState.AddModelError(string.Empty, "Vendor id not provided and not present in token.");
+                ModelState.AddModelError(string.Empty, "Vendor id or User id not provided and not present in token.");
                 return View(new VendorProfileViewModel());
             }
 
@@ -64,11 +73,20 @@ namespace Vendor_FE.Controllers
 
             try
             {
-                var resp = await client.GetAsync($"api/vendorprofiles/{id.Value}");
+                HttpResponseMessage resp;
+                if (id.HasValue && id.Value > 0)
+                {
+                    resp = await client.GetAsync($"api/vendorprofiles/{id.Value}");
+                }
+                else
+                {
+                    resp = await client.GetAsync($"api/vendorprofiles/by-user/{userId.Value}");
+                }
+
                 if (!resp.IsSuccessStatusCode)
                 {
                     ModelState.AddModelError(string.Empty, "Cannot load vendor profile from server.");
-                    return View(new VendorProfileViewModel { VendorId = id });
+                    return View(new VendorProfileViewModel { VendorId = id, UserId = userId });
                 }
 
                 var dto = await resp.Content.ReadFromJsonAsync<VendorProfileDto>();
@@ -99,18 +117,59 @@ namespace Vendor_FE.Controllers
             if (string.IsNullOrWhiteSpace(token))
                 return RedirectToAction("Login", "Account");
 
-            if (!id.HasValue) return BadRequest();
+            int? userId = null;
+            if (!id.HasValue)
+            {
+                try
+                {
+                    var parts = token.Split('.');
+                    if (parts.Length >= 2)
+                    {
+                        var payload = parts[1];
+                        var json = Base64UrlDecode(payload);
+                        using var doc = JsonDocument.Parse(json);
+                        
+                        if (doc.RootElement.TryGetProperty("vendor_id", out var claim))
+                        {
+                            if (claim.ValueKind == JsonValueKind.Number && claim.TryGetInt32(out var vid))
+                                id = vid;
+                            else if (claim.ValueKind == JsonValueKind.String && int.TryParse(claim.GetString(), out var vid2))
+                                id = vid2;
+                        }
+
+                        if (doc.RootElement.TryGetProperty("sub", out var subClaim))
+                        {
+                            if (subClaim.ValueKind == JsonValueKind.Number && subClaim.TryGetInt32(out var uid))
+                                userId = uid;
+                            else if (subClaim.ValueKind == JsonValueKind.String && int.TryParse(subClaim.GetString(), out var uid2))
+                                userId = uid2;
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            if (!id.HasValue && !userId.HasValue) return BadRequest();
 
             var client = _httpFactory.CreateClient("BackendAPI");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             try
             {
-                var resp = await client.GetAsync($"api/vendorprofiles/{id.Value}");
+                HttpResponseMessage resp;
+                if (id.HasValue && id.Value > 0)
+                {
+                    resp = await client.GetAsync($"api/vendorprofiles/{id.Value}");
+                }
+                else
+                {
+                    resp = await client.GetAsync($"api/vendorprofiles/by-user/{userId.Value}");
+                }
+
                 if (!resp.IsSuccessStatusCode)
                 {
                     ModelState.AddModelError(string.Empty, "Cannot load vendor profile from server.");
-                    return View(new VendorEditViewModel { VendorId = id });
+                    return View(new VendorEditViewModel { VendorId = id, UserId = userId });
                 }
 
                 var dto = await resp.Content.ReadFromJsonAsync<VendorProfileDto>();

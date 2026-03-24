@@ -1,0 +1,340 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Quản lý Hóa Đơn & Gạch Nợ";
+}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Hóa Đơn Căn Hộ / Sạp</h3>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#calcModal">Tính Tiền & Tạo Hóa Đơn</button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-3">
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <p class="text-muted">Danh sách hóa đơn (hiển thị dựa trên vendor hoặc danh sách chung). Tính năng tìm kiếm sẽ hiển thị tại đây.</p>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="invoicesTable" class="table table-striped table-hover table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã HĐ</th>
+                            <th>Mã Hợp Đồng</th>
+                            <th>Kỳ (Tháng/Năm)</th>
+                            <th>Tổng Tiền</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Tạo</th>
+                            <th class="text-center" style="width: 250px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be loaded via ajax or mock -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="emptyState" class="text-center mt-5 mb-5 text-muted">Vui lòng nhập ID Vendor để xem hóa đơn (Demo)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Calculate Modal -->
+<div class="modal fade" id="calcModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formCalculate">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tạo Hóa Đơn Mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Mã Hợp Đồng (Hợp đồng Sạp đang Active)</label>
+                        <select class="form-select" id="calcContractId" required>
+                            <option value="">-- Chọn Hợp Đồng (Sạp) --</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tháng</label>
+                            <input type="number" class="form-control" id="calcMonth" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Năm</label>
+                            <input type="number" class="form-control" id="calcYear" required />
+                        </div>
+                    </div>
+                    <p class="text-warning small">*Hệ thống sẽ lấy giá Điện/Nước có hiệu lực và tự động tính toán với giá trị chênh lệch.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" id="btnCalculate">Xác nhận Tạo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chi Tiết Hóa Đơn <span id="lblDetailInvoiceId" class="text-primary fw-bold"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Người thuê:</strong> <span id="lblDetailVendor"></span>
+                    </div>
+                    <div class="col-6 text-end">
+                        <strong>Mã Sạp:</strong> <span id="lblDetailStall"></span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Chi phí</th>
+                                <th class="text-end">Số lượng</th>
+                                <th class="text-end">Đơn giá</th>
+                                <th class="text-end">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailItemsBody">
+                            <!-- Items will be injected here -->
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3" class="text-end">Tổng Cộng:</th>
+                                <th class="text-end text-danger fs-5" id="lblDetailTotal"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formPay">
+                <div class="modal-header">
+                    <h5 class="modal-title">Xác Nhận Thanh Toán (Gạch Nợ)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="payInvoiceId" />
+                    <div class="mb-3">
+                        <label class="form-label">Số Tiền (VNĐ)</label>
+                        <input type="number" class="form-control" id="payAmount" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phương Thức</label>
+                        <select class="form-select" id="payMethod">
+                            <option value="CASH">Tiền mặt</option>
+                            <option value="BANK_TRANSFER">Chuyển khoản / Ngân hàng</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mã Giao Dịch (Nếu có)</label>
+                        <input type="text" class="form-control" id="payTxCode" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-success" id="btnPay">Gạch Nợ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const API_BASE = 'https://localhost:7169/api';
+        
+        let d = new Date();
+        $('#calcMonth').val(d.getMonth() + 1);
+        $('#calcYear').val(d.getFullYear());
+
+        function getAuthHeaders() {
+            let token = localStorage.getItem("token");
+            let headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+            return headers;
+        }
+
+        $(document).ready(function () {
+            // Demo Fetch Invoices for Vendor = 1 (Since Admin usually fetches all, we just simulate)
+            function loadDemoInvoices() {
+                $.ajax({
+                    url: `${API_BASE}/Invoices/all`,
+                    type: 'GET',
+                    headers: getAuthHeaders(),
+                    success: function (res) {
+                        $('#emptyState').hide();
+                        let html = '';
+                        res.forEach(i => {
+                            let badge = i.status === 'PAID' ? 'bg-success' : 'bg-danger';
+                            let actions = i.status === 'PAID' 
+                                ? `<button class="btn btn-sm btn-outline-primary btn-details" data-id="${i.invoiceId}">Chi tiết</button>`
+                                : `<button class="btn btn-sm btn-success btn-pay" data-id="${i.invoiceId}" data-amount="${i.totalAmount}">Gạch nợ</button>
+                                   <button class="btn btn-sm btn-info btn-details" data-id="${i.invoiceId}">Chi tiết</button>`;
+                            html += `
+                            <tr>
+                                <td>${i.invoiceId}</td>
+                                <td>${i.contractId}</td>
+                                <td>${i.month}/${i.year}</td>
+                                <td>${i.totalAmount.toLocaleString()} đ</td>
+                                <td><span class="badge ${badge}">${i.status}</span></td>
+                                <td>${new Date(i.createdAt).toLocaleDateString()}</td>
+                                <td class="text-center">${actions}</td>
+                            </tr>
+                            `;
+                        });
+                        $('#invoicesTable tbody').html(html);
+                    },
+                    error: function(err) {
+                        console.log("Could not load invoices", err);
+                    }
+                });
+            }
+
+            function loadActiveContracts() {
+                $.ajax({
+                    url: `${API_BASE}/Invoices/active-contracts`,
+                    type: 'GET',
+                    headers: getAuthHeaders(),
+                    success: function (res) {
+                        let html = '<option value="">-- Chọn Hợp Đồng (Sạp) --</option>';
+                        res.forEach(c => {
+                            html += `<option value="${c.contractId}">[Sạp ${c.stallCode}] - HD ${c.contractId} - ${c.businessName}</option>`;
+                        });
+                        $('#calcContractId').html(html);
+                    },
+                    error: function (xhr) {
+                        console.error("Could not load contracts", xhr);
+                    }
+                });
+            }
+
+            // Gọi thử (Bỏ qua check token để test Admin UI chưa có Login)
+            loadDemoInvoices();
+            loadActiveContracts();
+
+            // Handle Calculate
+            $('#formCalculate').submit(function (e) {
+                e.preventDefault();
+                $('#btnCalculate').prop('disabled', true);
+                let data = {
+                    contractId: parseInt($('#calcContractId').val()),
+                    month: parseInt($('#calcMonth').val()),
+                    year: parseInt($('#calcYear').val())
+                };
+
+                $.ajax({
+                    url: `${API_BASE}/Invoices/calculate`,
+                    type: 'POST',
+                    headers: getAuthHeaders(),
+                    data: JSON.stringify(data),
+                    success: function (res) {
+                        $('#btnCalculate').prop('disabled', false);
+                        $('#calcModal').modal('hide');
+                        Swal.fire('Thành công', 'Đã tính toán và tạo hóa đơn.', 'success');
+                        loadDemoInvoices();
+                    },
+                    error: function (xhr) {
+                        $('#btnCalculate').prop('disabled', false);
+                        Swal.fire('Lỗi', xhr.responseJSON?.message || 'Có lỗi khi tạo hóa đơn.', 'error');
+                    }
+                });
+            });
+
+            // Handle Details
+            $(document).on('click', '.btn-details', function() {
+                let invoiceId = $(this).data('id');
+                $.ajax({
+                    url: `${API_BASE}/Invoices/all/${invoiceId}/details`,
+                    type: 'GET',
+                    headers: getAuthHeaders(),
+                    success: function(res) {
+                        $('#lblDetailInvoiceId').text('#' + String(res.invoiceId).padStart(6, '0'));
+                        $('#lblDetailVendor').text(res.businessName);
+                        $('#lblDetailStall').text(res.stallCode);
+                        $('#lblDetailTotal').text(res.totalAmount.toLocaleString() + ' đ');
+                        
+                        let itemsHtml = '';
+                        res.items.forEach(item => {
+                            itemsHtml += `
+                                <tr>
+                                    <td>${item.feeName}</td>
+                                    <td class="text-end">${item.quantity ? item.quantity.toLocaleString() : '-'}</td>
+                                    <td class="text-end">${item.unitPrice ? item.unitPrice.toLocaleString() + ' đ' : '-'}</td>
+                                    <td class="text-end">${item.amount.toLocaleString()} đ</td>
+                                </tr>
+                            `;
+                        });
+                        $('#detailItemsBody').html(itemsHtml);
+                        $('#detailsModal').modal('show');
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Lỗi', 'Không lấy được chi tiết hóa đơn', 'error');
+                    }
+                });
+            });
+
+            // Open Pay Modal
+            $(document).on('click', '.btn-pay', function() {
+                $('#payInvoiceId').val($(this).data('id'));
+                $('#payAmount').val($(this).data('amount'));
+                $('#payModal').modal('show');
+            });
+
+            // Handle Submit Pay
+            $('#formPay').submit(function (e) {
+                e.preventDefault();
+                $('#btnPay').prop('disabled', true);
+                
+                let id = $('#payInvoiceId').val();
+                let data = {
+                    paymentMethod: $('#payMethod').val(),
+                    paidAmount: parseFloat($('#payAmount').val()),
+                    transactionCode: $('#payTxCode').val()
+                };
+
+                $.ajax({
+                    url: `${API_BASE}/Invoices/${id}/pay`,
+                    type: 'POST',
+                    headers: getAuthHeaders(),
+                    data: JSON.stringify(data),
+                    success: function (res) {
+                        $('#btnPay').prop('disabled', false);
+                        $('#payModal').modal('hide');
+                        Swal.fire('Thành công', 'Hóa đơn đã được gạch nợ.', 'success');
+                        loadDemoInvoices();
+                    },
+                    error: function (xhr) {
+                        $('#btnPay').prop('disabled', false);
+                        Swal.fire('Lỗi', xhr.responseJSON?.message || 'Có lỗi khi gạch nợ.', 'error');
+                    }
+                });
+            });
+        });
+    </script>
+}
