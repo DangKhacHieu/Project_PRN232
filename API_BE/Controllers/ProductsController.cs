@@ -13,7 +13,7 @@ namespace API_BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = "Vendor")]
+    [Authorize(Roles = "Vendor")]
     public class ProductsController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -92,9 +92,8 @@ namespace API_BE.Controllers
         // Hàm helper dùng chung trong Controller này
         private int GetVendorIdFromToken()
         {
-            //var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
-            //return claim != null ? int.Parse(claim.Value) : 0;
-            return 4;
+            var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
+            return claim != null ? int.Parse(claim.Value) : 0;
         }
 
         [HttpGet("categories")]

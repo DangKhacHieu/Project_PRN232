@@ -55,7 +55,7 @@ namespace BLL.Services.Implementations
             };
 
             if (user.VendorProfile != null)
-                claims.Add(new Claim("vendor_id", user.VendorProfile.VendorId.ToString()));
+                claims.Add(new Claim("VendorId", user.VendorProfile.VendorId.ToString()));
 
             var keyBytes = Encoding.UTF8.GetBytes(key);
             var credentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256);

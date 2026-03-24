@@ -17,6 +17,7 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> Index()
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            AddToken(client);
             var response = await client.GetAsync("api/VendorProfiles/my-profile");
             
             if (response.IsSuccessStatusCode)
@@ -34,6 +35,7 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> Index(string BusinessName, string Description, IFormFile? NewCoverImage)
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            AddToken(client);
             using var content = new MultipartFormDataContent();
             
             content.Add(new StringContent(BusinessName ?? ""), "BusinessName");
@@ -58,6 +60,15 @@ namespace Vendor_FE.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        private void AddToken(HttpClient client)
+        {
+            var token = Request.Cookies["VendorAuth"];
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
         }
     }
 }

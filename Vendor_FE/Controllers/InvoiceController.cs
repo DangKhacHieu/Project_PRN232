@@ -28,6 +28,7 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> Index()
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            AddToken(client);
             var response = await client.GetAsync("api/Invoices");
             var invoices = new List<InvoiceResponseDTO>();
             if (response.IsSuccessStatusCode)
@@ -42,6 +43,7 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> Details(int id)
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            AddToken(client);
             var response = await client.GetAsync($"api/Invoices/{id}/details");
             if (!response.IsSuccessStatusCode) return RedirectToAction(nameof(Index));
 
@@ -57,13 +59,8 @@ namespace Vendor_FE.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportPdf(int id)
         {
-            var token = Request.Headers["Authorization"].ToString();
-
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Add("Authorization", token);
-            }
+            AddToken(client);
 
             var response = await client.GetAsync($"api/Invoices/{id}/details");
             if (!response.IsSuccessStatusCode)
@@ -186,6 +183,7 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> GetPaymentQr(int id)
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            AddToken(client);
             var response = await client.GetAsync($"api/Invoices/{id}/generate-qr");
             if (response.IsSuccessStatusCode)
             {
@@ -198,6 +196,15 @@ namespace Vendor_FE.Controllers
                 }
             }
             return BadRequest();
+        }
+
+        private void AddToken(HttpClient client)
+        {
+            var token = Request.Cookies["VendorAuth"];
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
         }
     }
 }

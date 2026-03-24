@@ -13,7 +13,7 @@ namespace API_BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = "Vendor")]
+    [Authorize(Roles = "Vendor")]
     public class InvoicesController : ControllerBase
     {
         private readonly IInvoiceService _invoiceService;
@@ -72,9 +72,8 @@ namespace API_BE.Controllers
 
         private int GetVendorIdFromToken()
         {
-            //var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
-            //return claim != null ? int.Parse(claim.Value) : 0;
-            return 4;
+            var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
+            return claim != null ? int.Parse(claim.Value) : 0;
         }
     }
 }

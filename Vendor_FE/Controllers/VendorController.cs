@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -39,7 +39,7 @@ namespace Vendor_FE.Controllers
                         var payload = parts[1];
                         var json = Base64UrlDecode(payload);
                         using var doc = JsonDocument.Parse(json);
-                        if (doc.RootElement.TryGetProperty("vendor_id", out var claim))
+                        if (doc.RootElement.TryGetProperty("VendorId", out var claim))
                         {
                             if (claim.ValueKind == JsonValueKind.Number && claim.TryGetInt32(out var vid))
                                 id = vid;

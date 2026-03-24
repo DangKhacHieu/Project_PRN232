@@ -76,21 +76,7 @@ namespace BLL.Services.Implementations
         }
 
 
-        public async Task<bool> ConfirmTicketAsync(int ticketId, int vendorId)
-        {
-            var ticket = await _ticketRepo.GetByIdAsync(ticketId);
 
-            if (ticket == null) return false;
-
-            if (ticket.VendorId != vendorId) return false;
-
-            if (ticket.Status != TicketStatus.Resolved) return false;
-
-            ticket.Status = TicketStatus.Closed;
-            await _ticketRepo.UpdateAsync(ticket);
-
-            return true;
-        }
 
         public async Task<bool> ProcessTicketAsync(int ticketId)
         {

@@ -17,6 +17,7 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> Index()
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            AddToken(client);
             var response = await client.GetAsync("api/SupportTickets");
             var tickets = new List<SupportTicketResponseDTO>();
 
@@ -40,6 +41,7 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> Create(string Title, string Description, List<IFormFile> Images)
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
+            AddToken(client);
             using var content = new MultipartFormDataContent();
             
             content.Add(new StringContent(Title ?? ""), "Title");
@@ -67,23 +69,15 @@ namespace Vendor_FE.Controllers
             return RedirectToAction(nameof(Index)); // Or return View with error
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Confirm(int id)
+
+
+        private void AddToken(HttpClient client)
         {
-            var client = _httpClientFactory.CreateClient("BackendAPI");
-            var content = new StringContent(""); // Empty body for PUT
-            var response = await client.PutAsync($"api/SupportTickets/{id}/confirm", content);
-
-            if (response.IsSuccessStatusCode)
+            var token = Request.Cookies["VendorAuth"];
+            if (!string.IsNullOrEmpty(token))
             {
-                TempData["SuccessMessage"] = "Xác nhận sự cố đã được xử lý xong!";
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             }
-            else
-            {
-                TempData["ErrorMessage"] = "Không thể xác nhận hoặc có lỗi xảy ra.";
-            }
-
-            return RedirectToAction(nameof(Index));
         }
     }
 }
