@@ -78,6 +78,7 @@ namespace BLL.Services.Implementations
                 FullName = user.FullName,
                 Role = user.Role?.RoleName,
                 RoleId = user.RoleId
+
             };
         }
 

@@ -31,12 +31,12 @@ namespace Vendor_FE.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index(string StoreName, string Description, IFormFile? NewCoverImage)
+        public async Task<IActionResult> Index(string BusinessName, string Description, IFormFile? NewCoverImage)
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
             using var content = new MultipartFormDataContent();
             
-            content.Add(new StringContent(StoreName ?? ""), "StoreName");
+            content.Add(new StringContent(BusinessName ?? ""), "BusinessName");
             content.Add(new StringContent(Description ?? ""), "Description");
 
             if (NewCoverImage != null)

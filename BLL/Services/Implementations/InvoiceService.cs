@@ -275,32 +275,37 @@ namespace BLL.Services.Implementations
         {
             try
             {
+                long amountLong = (long)amount; // MoMo yêu cầu số nguyên, không chấp nhận decimal
                 string orderId = Guid.NewGuid().ToString();
                 string requestId = Guid.NewGuid().ToString();
                 string extraData = invoiceId.ToString();
-                string rawSignature = $"accessKey={config.AccessKey}&amount={amount}&extraData={extraData}&ipnUrl={config.CallbackUrl}&orderId={orderId}&orderInfo=Thanh toan HD {invoiceId}&partnerCode={config.PartnerCode}&redirectUrl={config.ReturnUrl}&requestId={requestId}&requestType=captureWallet";
+                string orderInfo = $"Thanh toan HD {invoiceId}";
+
+                // Signature phải dùng amountLong để khớp với request body
+                string rawSignature = $"accessKey={config.AccessKey}&amount={amountLong}&extraData={extraData}&ipnUrl={config.CallbackUrl}&orderId={orderId}&orderInfo={orderInfo}&partnerCode={config.PartnerCode}&redirectUrl={config.ReturnUrl}&requestId={requestId}&requestType=captureWallet";
                 string signature = ComputeHmacSha256(rawSignature, config.SecretKey);
 
                 var requestData = new
                 {
                     partnerCode = config.PartnerCode,
                     requestId,
-                    amount,
+                    amount = amountLong,  // long, không phải decimal
                     orderId,
-                    orderInfo = $"Thanh toan HD {invoiceId}",
+                    orderInfo,
                     redirectUrl = config.ReturnUrl,
                     ipnUrl = config.CallbackUrl,
                     requestType = "captureWallet",
                     extraData,
+                    lang = "vi",          // bắt buộc với MoMo API v2
                     signature
                 };
 
                 using var client = new System.Net.Http.HttpClient();
                 var response = await client.PostAsJsonAsync(config.MomoApiUrl, requestData);
+                var resBody = await response.Content.ReadFromJsonAsync<System.Text.Json.Nodes.JsonObject>();
                 if (response.IsSuccessStatusCode)
                 {
-                    var res = await response.Content.ReadFromJsonAsync<System.Text.Json.Nodes.JsonObject>();
-                    return res?["payUrl"]?.ToString();
+                    return resBody?["payUrl"]?.ToString();
                 }
                 return null;
             }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
@@ -192,26 +193,71 @@ namespace Vendor_FE.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPaymentQr(int id)
+        public async Task<IActionResult> PayWithMomo(int id)
         {
             var token = Request.Cookies["VendorAuth"];
+            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Account");
+
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            if (!string.IsNullOrEmpty(token))
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await client.GetAsync($"api/Invoices/{id}/momo-payment");
+            if (!response.IsSuccessStatusCode)
             {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                TempData["Error"] = "Không thể tạo link thanh toán MoMo. Vui lòng thử lại!";
+                return RedirectToAction(nameof(Index));
             }
-            var response = await client.GetAsync($"api/Invoices/{id}/generate-qr");
-            if (response.IsSuccessStatusCode)
+
+            var jsonStr = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var data = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonStr, options);
+
+            // Tìm key không phân biệt hoa/thường (API trả "Url", không phải "url")
+            var momoUrl = data?
+                .FirstOrDefault(kv => kv.Key.Equals("url", StringComparison.OrdinalIgnoreCase))
+                .Value;
+
+            if (!string.IsNullOrEmpty(momoUrl))
+                return Redirect(momoUrl);
+
+            TempData["Error"] = "Không nhận được link thanh toán MoMo.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> MomoReturn(
+            int resultCode,
+            string? extraData,
+            string? orderId,
+            string? message,
+            long transId,
+            long amount)
+        {
+            if (resultCode == 0 && int.TryParse(extraData, out int invoiceId))
             {
-                var content = await response.Content.ReadAsStringAsync();
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var data = JsonSerializer.Deserialize<Dictionary<string, string>>(content, options);
-                if (data != null && data.ContainsKey("qrUrl"))
+                var token = Request.Cookies["VendorAuth"];
+                var client = _httpClientFactory.CreateClient("BackendAPI");
+                if (!string.IsNullOrEmpty(token))
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var payload = new
                 {
-                    return Json(new { qrUrl = data["qrUrl"] });
-                }
+                    paymentMethod = "MOMO",
+                    paidAmount = (decimal)amount,
+                    transactionCode = orderId,
+                    momoTransactionId = transId.ToString()
+                };
+
+                var response = await client.PostAsJsonAsync($"api/Invoices/{invoiceId}/pay", payload);
+                TempData[response.IsSuccessStatusCode ? "Success" : "Error"] = response.IsSuccessStatusCode
+                    ? "Thanh toán MoMo thành công! Vui lòng chờ nhân viên xác nhận."
+                    : "Thanh toán thành công nhưng cập nhật trạng thái thất bại. Vui lòng liên hệ quản lý.";
             }
-            return BadRequest();
+            else
+            {
+                TempData["Error"] = $"Thanh toán MoMo thất bại: {message ?? "Giao dịch bị huỷ."}";
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

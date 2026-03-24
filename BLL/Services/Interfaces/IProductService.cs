@@ -13,5 +13,6 @@ namespace BLL.Services.Interfaces
         Task<IEnumerable<ProductResponseDTO>> GetProductsByVendorAsync(int vendorId, int? categoryId = null, bool? isActive = null, string? search = null);
         Task<bool> UpdateProductAsync(int vendorId, int productId, ProductUpdateRequestDTO request);
         Task<bool> DeleteProductAsync(int vendorId, int productId);
+        Task<IEnumerable<CategoryDTO>> GetCategoriesAsync();
     }
 }

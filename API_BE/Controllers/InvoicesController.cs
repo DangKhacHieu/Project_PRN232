@@ -169,14 +169,27 @@ namespace API_BE.Controllers
         {
             int vendorId = GetVendorIdFromToken();
             var invoice = await _invoiceService.GetInvoiceDetailAsync(vendorId, id);
-            if (invoice == null || invoice.Status == "PAID") return BadRequest("Invoice not found or already paid.");
+            if (invoice == null) return BadRequest("Invoice not found.");
+            if (invoice.Status == "PAID") return BadRequest("Invoice already paid.");
 
             var momoConfig = config.GetSection("MomoPaymentConfig").Get<BLL.DTOs.MomoPaymentConfig>();
             if (momoConfig == null) return StatusCode(500, "Momo configuration is missing.");
 
             var url = await _invoiceService.GenerateMomoPaymentUrlAsync(id, invoice.TotalAmount, momoConfig);
-            if (url == null) return BadRequest("Could not generate Momo URL.");
+            if (url == null) return BadRequest(new { Message = "Could not generate Momo URL. Check API logs.", TotalAmount = invoice.TotalAmount });
             return Ok(new { Url = url });
+        }
+        [HttpPost("momo-webhook")]
+        [AllowAnonymous]
+        public async Task<IActionResult> MomoWebhook(
+            [FromBody] BLL.DTOs.MomoWebhookRequestDTO request,
+            [FromServices] Microsoft.Extensions.Configuration.IConfiguration config)
+        {
+            var momoConfig = config.GetSection("MomoPaymentConfig").Get<BLL.DTOs.MomoPaymentConfig>();
+            if (momoConfig == null) return StatusCode(500);
+
+            bool success = await _invoiceService.ProcessMomoWebhookAsync(request, momoConfig);
+            return success ? Ok() : BadRequest();
         }
     }
 }

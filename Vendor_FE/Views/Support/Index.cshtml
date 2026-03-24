@@ -60,7 +60,7 @@
                                     {
                                         <div class="d-flex flex-column align-items-center gap-2">
                                             <span class="badge bg-info text-dark">Đã khắc phục</span>
-                                            <form action="/Support/Confirm/@item.TicketId" method="post" class="d-inline" onsubmit="return confirm('Xác nhận sự cố đã được xử lý triệt để?');">
+                                            <form action="/Support/Confirm/@item.TicketId" method="post" class="d-inline" onsubmit="return confirmAction(event, this, 'Xác nhận hoàn thành', 'Xác nhận sự cố đã được xử lý triệt để?', 'info', 'btn-success');">
                                                 <button type="submit" class="btn btn-sm btn-success rounded-pill"><i class="fa-solid fa-check me-1"></i>Xác nhận xong</button>
                                             </form>
                                         </div>

@@ -24,10 +24,11 @@ namespace BLL.Services.Implementations
             return new VendorProfileResponseDTO
             {
                 VendorId = profile.VendorId,
-                StoreName = profile.BusinessName,
+                BusinessName = profile.BusinessName,
                 Description = profile.Description,
                 CoverImageUrl = profile.CoverImageUrl,
-                OwnerName = "Chủ gian hàng", // Tạm mock, nếu có liên kết User trong DB có thể map thật
+                OwnerName = "Chủ gian hàng", 
+                StallCode = profile.StallContracts?.FirstOrDefault(sc => sc.Status == "ACTIVE")?.Stall?.StallCode,
                 LastUpdated = DateTime.Now
             };
         }

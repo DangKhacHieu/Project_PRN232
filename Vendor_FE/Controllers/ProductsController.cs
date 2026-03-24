@@ -30,25 +30,7 @@ namespace Vendor_FE.Controllers
                 var content = await response.Content.ReadAsStringAsync();
                 var products = JsonSerializer.Deserialize<List<ProductResponseDTO>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<ProductResponseDTO>();
                 
-                // Fetch ALL products from vendor just to get the full list of categories they own
-                var allResponse = await _client.GetAsync("/api/Products");
-                var allCategories = new Dictionary<int, string>();
-                if (allResponse.IsSuccessStatusCode)
-                {
-                    var allContent = await allResponse.Content.ReadAsStringAsync();
-                    var allProducts = JsonSerializer.Deserialize<List<ProductResponseDTO>>(allContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    if (allProducts != null)
-                    {
-                        foreach (var p in allProducts)
-                        {
-                            if (p.CategoryId.HasValue && !string.IsNullOrEmpty(p.CategoryName))
-                            {
-                                allCategories[p.CategoryId.Value] = p.CategoryName;
-                            }
-                        }
-                    }
-                }
-                ViewBag.Categories = allCategories;
+                ViewBag.Categories = await GetCategoriesAsync();
                 ViewBag.CurrentCategory = categoryId;
                 ViewBag.CurrentActive = isActive;
                 ViewBag.CurrentSearch = search;
@@ -58,9 +40,29 @@ namespace Vendor_FE.Controllers
             return View(new List<ProductResponseDTO>());
         }
 
-        // GET: Products/Create
-        public IActionResult Create()
+        private async Task<Dictionary<int, string>> GetCategoriesAsync()
         {
+            var response = await _client.GetAsync("/api/Products/categories");
+            var categories = new Dictionary<int, string>();
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var categoryList = JsonSerializer.Deserialize<List<CategoryDTO>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (categoryList != null)
+                {
+                    foreach (var c in categoryList)
+                    {
+                        categories[c.CategoryId] = c.CategoryName;
+                    }
+                }
+            }
+            return categories;
+        }
+
+        // GET: Products/Create
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Categories = await GetCategoriesAsync();
             return View();
         }
 
@@ -113,6 +115,7 @@ namespace Vendor_FE.Controllers
                     };
                     ViewBag.ProductId = id;
                     ViewBag.ImageUrl = product.ImageUrl;
+                    ViewBag.Categories = await GetCategoriesAsync();
                     return View(updateDto);
                 }
             }
