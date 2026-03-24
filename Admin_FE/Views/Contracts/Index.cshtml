@@ -1,0 +1,375 @@
+﻿@model IEnumerable<BLL.DTOs.StallContractDTO>
+@{
+    ViewData["Title"] = "Danh sách Hợp đồng";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+            transition: 0.3s;
+        }
+
+        .badge {
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-0">Quản lý Hợp đồng Thuê sạp</h4>
+            <small class="text-muted">Danh sách các hợp đồng đang hoạt động và sắp hết hạn</small>
+        </div>
+        <a href="@Url.Action("Create", "Contracts")" class="btn btn-primary px-4 shadow-sm">
+            <i class="bi bi-plus-lg"></i> Tạo hợp đồng mới
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="p-3 bg-light border-bottom">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="filterSearch" class="form-control" placeholder="Tìm tên tiểu thương hoặc mã sạp...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="filterStatus" class="form-select">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="ACTIVE">Đang hiệu lực</option>
+                            <option value="EXPIRED">Hết hạn</option>
+                            
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Làm mới
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4">Mã HĐ</th>
+                            <th>Sạp</th>
+                            <th>Tiểu thương</th>
+                            <th>Thời hạn</th>
+                            <th>Giá thuê (Tháng)</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold text-primary">#@item.ContractId</td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">@item.StallCode</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">@item.BusinessName</div>
+                                    </td>
+                                    <td>
+                                        <small class="d-block text-muted">@item.StartDate.ToString("dd/MM/yyyy")</small>
+                                        <small class="d-block fw-bold text-dark">@item.EndDate.ToString("dd/MM/yyyy")</small>
+                                    </td>
+                                    <td class="fw-bold">@item.MonthlyRent.ToString("N0") ₫</td>
+                                    <td>
+                                        @if (item.Status == "ACTIVE")
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success px-3">Đang hiệu lực</span>
+                                        }
+                                        else if (item.Status == "EXPIRED")
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger px-3">Hết hạn</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary px-3">@item.Status</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group shadow-sm">
+                                            @* Nút In Hợp Đồng - Gọi trực tiếp Action DownloadPdf ở Controller FE *@
+                                            <a asp-action="DownloadPdf" asp-route-id="@item.ContractId"
+                                               target="_blank"
+                                               class="btn btn-sm btn-white border text-secondary">
+                                                <i class="bi bi-printer-fill me-1"></i> In HĐ
+                                            </a>
+
+                                            <button class="btn btn-sm btn-white border text-danger ms-1"
+                                                    onclick="terminateContract(@item.ContractId, '@item.StallCode')">
+                                                <i class="bi bi-x-circle me-1"></i> Thanh lý
+                                            </button>
+
+                                            <button class="btn btn-sm btn-white border text-primary ms-1"
+                                                    onclick="renewContract(@item.ContractId, '@item.StallCode', '@item.EndDate.ToString("yyyy-MM-dd")', @item.MonthlyRent)">
+                                                <i class="bi bi-arrow-repeat me-1"></i> Gia hạn
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <div class="mb-2 fs-2">📭</div>
+                                    Chưa có dữ liệu hợp đồng nào được tạo.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="renewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">🔄 Gia hạn Hợp đồng <span id="renewStallCode" class="fw-bold"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="renewContractId" />
+
+                <div class="alert alert-info py-2">
+                    <div class="small"><i class="bi bi-info-circle"></i> <b>Thông tin hiện tại:</b></div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span>Ngày kết thúc cũ:</span>
+                        <span id="oldEndDate" class="fw-bold"></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Giá thuê cũ:</span>
+                        <span id="oldPrice" class="fw-bold text-primary"></span>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Ngày kết thúc mới <span class="text-danger">*</span></label>
+                    <input type="date" id="newEndDate" class="form-control border-primary"
+                           min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    <small class="text-muted text-italic">Hệ thống chỉ chấp nhận ngày từ hôm nay trở đi.</small>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Giá thuê mới (VNĐ/tháng) <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">₫</span>
+                        <input type="number" id="newPrice" class="form-control border-primary" placeholder="Ví dụ: 5000000" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary px-4" onclick="confirmRenew()">Xác nhận gia hạn</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            // Lắng nghe sự kiện gõ phím hoặc đổi dropdown
+            $('#filterSearch, #filterStatus').on('keyup change', function () {
+                applyFilters();
+            });
+        });
+
+        function applyFilters() {
+            const searchText = $('#filterSearch').val().toLowerCase().trim();
+            const statusValue = $('#filterStatus').val().toUpperCase();
+
+            $('table tbody tr').each(function () {
+                const row = $(this);
+
+                // Lấy dữ liệu từ các cột
+                const stallCode = row.find('td:nth-child(2)').text().toLowerCase();
+                const businessName = row.find('td:nth-child(3)').text().toLowerCase();
+
+                // Tìm giá trị trạng thái ẩn hoặc dựa vào text của badge
+                // Cách nhanh nhất là lấy thuộc tính dữ liệu (nếu bạn có) hoặc check text
+                const statusText = row.find('td:nth-child(6)').text().toUpperCase();
+
+                // Logic kiểm tra
+                const matchSearch = stallCode.includes(searchText) || businessName.includes(searchText);
+
+                let matchStatus = true;
+                if (statusValue !== "") {
+                    if (statusValue === "ACTIVE") matchStatus = statusText.includes("ĐANG HIỆU LỰC");
+                    else if (statusValue === "EXPIRED") matchStatus = statusText.includes("HẾT HẠN");
+                    else matchStatus = statusText.includes(statusValue);
+                }
+
+                // Hiển thị hoặc ẩn dòng
+                if (matchSearch && matchStatus) {
+                    row.show();
+                } else {
+                    row.hide();
+                }
+            });
+
+            // Hiển thị thông báo nếu không tìm thấy kết quả nào
+            checkEmptyResult();
+        }
+
+        function resetFilters() {
+            $('#filterSearch').val('');
+            $('#filterStatus').val('');
+            $('table tbody tr').show();
+            $('#noResultRow').remove();
+        }
+
+        function checkEmptyResult() {
+            $('#noResultRow').remove();
+            if ($('table tbody tr:visible').length === 0) {
+                $('table tbody').append(`
+                    <tr id="noResultRow">
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            Không tìm thấy hợp đồng nào khớp với bộ lọc.
+                        </td>
+                    </tr>
+                `);
+            }
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+            // Hiển thị thông báo từ TempData
+            @if (TempData["Success"] != null)
+            {
+                    <text>
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: '@Html.Raw(TempData["Success"])',
+                        timer: 2500,
+                        timerProgressBar: true
+                    });
+                    </text>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                    <text>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi hệ thống',
+                        text: '@Html.Raw(TempData["Error"])'
+                    });
+                    </text>
+            }
+        });
+
+        // --- HÀM THANH LÝ ---
+        function terminateContract(id, stallCode) {
+            Swal.fire({
+                title: 'Xác nhận thanh lý?',
+                html: `Bạn muốn chấm dứt hợp đồng sạp <b>${stallCode}</b>?<br><span class="text-danger small">Sạp sẽ trở về trạng thái TRỐNG.</span>`,
+                input: 'text',
+                inputPlaceholder: 'Nhập lý do thanh lý...',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận',
+                confirmButtonColor: '#dc3545',
+                preConfirm: (value) => {
+                    if (!value) { Swal.showValidationMessage('Vui lòng nhập lý do'); }
+                    return value;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Đang xử lý...', didOpen: () => { Swal.showLoading(); } });
+                    $.ajax({
+                        url: `https://localhost:7169/api/StallContracts/terminate/${id}`,
+                        type: 'PUT',
+                        contentType: 'application/json',
+                        data: JSON.stringify(result.value),
+                        success: function () {
+                            Swal.fire('Thành công!', 'Hợp đồng đã đóng.', 'success').then(() => location.reload());
+                        },
+                        error: function (xhr) {
+                            Swal.fire('Lỗi!', xhr.responseText || 'Thao tác thất bại.', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        // --- HÀM GIA HẠN (Mở Modal) ---
+        function renewContract(id, stallCode, endDate, price) {
+            $('#renewContractId').val(id);
+            $('#renewStallCode').text(stallCode);
+
+            // Xử lý hiển thị ngày cũ (yyyy-mm-dd -> dd/mm/yyyy)
+            const dateParts = endDate.split('T')[0].split('-');
+            const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : endDate;
+
+            $('#oldEndDate').text(formattedDate);
+            $('#oldPrice').text(new Intl.NumberFormat('vi-VN').format(price) + ' ₫');
+
+            // Gán giá trị mặc định vào ô input
+            $('#newEndDate').val(endDate.split('T')[0]);
+            $('#newPrice').val(price);
+
+            $('#renewModal').modal('show');
+        }
+
+        // --- HÀM XÁC NHẬN GIA HẠN (Gửi API) ---
+        function confirmRenew() {
+            const id = $('#renewContractId').val();
+            const newEndDate = $('#newEndDate').val();
+            const newPrice = $('#newPrice').val();
+                const today = new Date();
+        today.setHours(0, 0, 0, 0);
+            if (newEndDate < today) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Ngày không hợp lệ',
+                text: 'Ngày gia hạn không được là ngày trong quá khứ!'
+            });
+            return;
+        }
+            if (!newEndDate || !newPrice || newPrice <= 0) {
+                Swal.fire('Chú ý', 'Vui lòng nhập đầy đủ thông tin hợp lệ!', 'warning');
+                return;
+            }
+
+            Swal.fire({ title: 'Đang xử lý...', didOpen: () => { Swal.showLoading(); } });
+
+            $.ajax({
+                url: `https://localhost:7169/api/StallContracts/renew/${id}`,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    newEndDate: newEndDate,
+                    newPrice: parseFloat(newPrice)
+                }),
+                success: function (res) {
+                    $('#renewModal').modal('hide');
+                    Swal.fire('Thành công!', 'Hợp đồng đã được gia hạn.', 'success').then(() => location.reload());
+                },
+                error: function (xhr) {
+                    Swal.fire('Lỗi!', xhr.responseText || 'Gia hạn thất bại.', 'error');
+                }
+            });
+        }
+    </script>
+}

@@ -112,5 +112,50 @@ namespace BLL.Services.Implementations
             await _ticketRepo.UpdateAsync(ticket);
             return true;
         }
+
+        public async Task<IEnumerable<SupportTicketDTO>> GetAllTickets()
+        {
+            var tickets = await _ticketRepo.GetAllWithDetailsAsync();
+
+            return tickets.Select(t => new SupportTicketDTO
+            {
+                TicketId = t.TicketId,
+                Title = t.Title ?? "Không có tiêu đề",
+                Description = t.Description ?? "Không có nội dung mô tả",
+                Status = t.Status ?? "PENDING",
+                CreatedAt = t.CreatedAt,
+                VendorName = t.Vendor?.User?.FullName ?? "N/A",
+                VendorPhone = t.Vendor?.User?.Phone ?? "N/A",
+                Images = t.TicketImages.Select(img => img.ImageUrl).ToList()
+            });
+        }
+
+        public async Task<bool> UpdateStatus(int id, string newStatus)
+        {
+            // Kiểm tra logic trạng thái trước khi cập nhật
+            var validStatus = new[] { "PENDING", "PROCESSING", "RESOLVED", "CLOSED" };
+            if (!validStatus.Contains(newStatus)) return false;
+
+            return await _ticketRepo.UpdateStatusAsync(id, newStatus);
+        }
+        public async Task<SupportTicketDTO> GetTicketById(int id)
+        {
+            var t = await _ticketRepo.GetByIdAdminAsync(id);
+
+            if (t == null) return null;
+
+            return new SupportTicketDTO
+            {
+                TicketId = t.TicketId,
+                Title = t.Title ?? "Không có tiêu đề",
+                Description = t.Description ?? "Không có nội dung",
+                Status = t.Status,
+                CreatedAt = t.CreatedAt,
+                VendorName = t.Vendor?.User?.FullName ?? "N/A",
+                VendorPhone = t.Vendor?.User?.Phone ?? "N/A",
+                // Lấy danh sách URL ảnh từ bảng ticket_images
+                Images = t.TicketImages.Select(img => img.ImageUrl).ToList()
+            };
+        }
     }
 }

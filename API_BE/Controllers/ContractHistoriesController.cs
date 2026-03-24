@@ -104,5 +104,7 @@ namespace API_BE.Controllers
         {
             return _context.ContractHistories.Any(e => e.HistoryId == id);
         }
+
+
     }
 }

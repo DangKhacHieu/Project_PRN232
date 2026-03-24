@@ -1,0 +1,38 @@
+﻿@model IEnumerable<BLL.DTOs.StallContractDTO>
+<div class="container-fluid">
+    <h4 class="fw-bold mb-4">Lịch sử Hợp đồng (Đã đóng)</h4>
+    <div class="card border-0 shadow-sm">
+        <table class="table table-hover align-middle">
+            <thead class="bg-light">
+                <tr>
+                    <th>Mã HĐ</th>
+                    <th>Sạp</th>
+                    <th>Tiểu thương</th>
+                    <th>Ngày kết thúc</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>#@item.ContractId</td>
+                        <td><span class="badge bg-secondary">@item.StallCode</span></td>
+                        <td>@item.BusinessName</td>
+                        <td>@item.EndDate.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @if (item.Status == "TERMINATED")
+                            {
+                                <span class="badge border border-danger text-danger">Đã thanh lý</span>
+                            }
+                            else
+                            {
+                                <span class="badge border border-warning text-warning">Hết hạn</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

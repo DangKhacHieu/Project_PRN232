@@ -72,5 +72,52 @@ namespace API_BE.Controllers
             if (result) return Ok(new { Message = "Sự cố đã được giải quyết!" });
             return BadRequest("Không thể cập nhật trạng thái đã giải quyết.");
         }
+
+        // 1. Lấy danh sách sự cố cho Admin
+        // GET: api/Tickets/list
+        [HttpGet("list")]
+        public async Task<IActionResult> GetList()
+        {
+            var result = await _ticketService.GetAllTickets();
+            return Ok(result);
+        }
+
+        // 2. Cập nhật trạng thái sự cố
+        // PUT: api/Tickets/update-status/{id}
+        [HttpPut("update-status/{id}")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] string newStatus)
+        {
+            var ticket = await _ticketService.GetTicketById(id);
+            if (ticket == null) return NotFound();
+
+            string currentStatus = ticket.Status.ToUpper();
+            string nextStatus = newStatus.ToUpper();
+
+            // KIỂM TRA LUỒNG TRẠNG THÁI (State Machine)
+            bool isValidTransition = false;
+            if (currentStatus == "PENDING" && nextStatus == "PROCESSING") isValidTransition = true;
+            else if (currentStatus == "PROCESSING" && nextStatus == "RESOLVED") isValidTransition = true;
+            else if (currentStatus == "RESOLVED" && nextStatus == "CLOSED") isValidTransition = true;
+
+            if (!isValidTransition)
+            {
+                return BadRequest($"Không thể chuyển từ {currentStatus} sang {nextStatus}. Vui lòng tuân thủ quy trình xử lý.");
+            }
+
+            var success = await _ticketService.UpdateStatus(id, nextStatus);
+            if (success) return Ok(new { message = "Cập nhật thành công!" });
+
+            return BadRequest("Lỗi cập nhật Database.");
+        }
+
+        // 3. Lấy chi tiết 1 sự cố (Nếu cần xem ảnh to hoặc nội dung dài)
+        // GET: api/Tickets/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var ticket = await _ticketService.GetTicketById(id);
+            if (ticket == null) return NotFound();
+            return Ok(ticket);
+        }
     }
 }

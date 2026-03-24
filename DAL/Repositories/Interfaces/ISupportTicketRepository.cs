@@ -13,5 +13,13 @@ namespace DAL.Repositories.Interfaces
         Task CreateAsync(SupportTicket ticket);
         Task<SupportTicket> GetByIdAsync(int ticketId);
         Task UpdateAsync(SupportTicket ticket);
+
+        //do them
+        // Lấy danh sách kèm theo thông tin tiểu thương và ảnh
+        Task<IEnumerable<SupportTicket>> GetAllWithDetailsAsync();
+
+        // Cập nhật trạng thái xử lý
+        Task<bool> UpdateStatusAsync(int id, string status);
+        Task<SupportTicket> GetByIdAdminAsync(int id);
     }
 }

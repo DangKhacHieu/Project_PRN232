@@ -1,17 +1,19 @@
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Text.Json.Serialization;
-
-using System;
 using API_BE.Helpers;
-using CloudinaryDotNet;
 using BLL.Services.Implementations;
 using BLL.Services.Interfaces;
+using CloudinaryDotNet;
 using DAL.Data;
 using DAL.Repositories.Implementations;
 using DAL.Repositories.Interfaces;
 
+using Microsoft.EntityFrameworkCore;
+using System;
+using System;
+using System.Text.Json.Serialization;
 
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -67,6 +69,8 @@ builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 builder.Services.AddScoped<IVendorProfileRepository, VendorProfileRepository>();
 builder.Services.AddScoped<IVendorProfileService, VendorProfileService>();
+builder.Services.AddScoped<IContractRepository, ContractRepository>();
+builder.Services.AddScoped<IContractService, ContractService>();
 
 var cloudinarySettings = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
 var account = new Account(
@@ -78,6 +82,7 @@ var cloudinary = new Cloudinary(account);
 builder.Services.AddSingleton(cloudinary);
 
 builder.Services.AddScoped<IPhotoService, PhotoService>();
+
 var app = builder.Build();
 
 
