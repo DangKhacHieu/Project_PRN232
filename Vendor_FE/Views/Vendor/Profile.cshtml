@@ -1,0 +1,54 @@
+﻿@model Vendor_FE.Models.VendorProfileViewModel
+
+@{
+    ViewData["Title"] = "Vendor Profile";
+}
+
+<div class="container py-4">
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-warning">
+            @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>@e.ErrorMessage</div>
+            }
+        </div>
+    }
+
+    <div class="card shadow-sm">
+        @if (!string.IsNullOrEmpty(Model.CoverImageUrl))
+        {
+            <div style="height:260px; overflow:hidden;">
+                <img src="@(Model.CoverImageUrl)" class="w-100" style="object-fit:cover; height:260px;" alt="Cover" />
+            </div>
+        }
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:96px; height:96px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:28px;">
+                    @(string.IsNullOrWhiteSpace(Model.FullName) ? "?" : Model.FullName?.Split(' ').Last())
+                </div>
+                <div>
+                    <h4 class="mb-0">@(Model.BusinessName ?? "No business name")</h4>
+                    <small class="text-muted">Owner: @(Model.FullName ?? "N/A")</small>
+                    <div class="mt-2 text-muted small">
+                        <strong>Vendor ID:</strong> @(Model.VendorId?.ToString() ?? "N/A")
+                        &nbsp;•&nbsp;
+                        <strong>User ID:</strong> @(Model.UserId?.ToString() ?? "N/A")
+                    </div>
+                </div>
+                <div class="ms-auto">
+                    <a asp-controller="Vendor" asp-action="Edit" asp-route-id="@Model.VendorId" class="btn btn-outline-primary me-2">Edit Profile</a>
+                    <a asp-controller="Account" asp-action="RequestOtpEmail" class="btn btn-outline-secondary me-2">Change Password</a>
+                    <a asp-controller="Vendor" asp-action="Products" asp-route-vendorId="@Model.VendorId" class="btn btn-primary">Manage Products</a>
+                </div>
+            </div>
+
+            <hr />
+
+            <div>
+                <h6>Description</h6>
+                <p>@(string.IsNullOrWhiteSpace(Model.Description) ? "No description provided." : Model.Description)</p>
+            </div>
+        </div>
+    </div>
+</div>

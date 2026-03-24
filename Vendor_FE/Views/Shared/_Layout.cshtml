@@ -43,34 +43,61 @@
                 <button class="btn btn-outline-secondary rounded-circle d-flex justify-content-center align-items-center" id="menu-toggle" style="width: 40px; height: 40px; padding: 0;">
                     <i class="fa-solid fa-bars"></i>
                 </button>
-                <div class="ms-auto d-flex align-items-center">
-                    <div class="dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center text-dark text-decoration-none" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="https://ui-avatars.com/api/?name=Vendor&background=0D8ABC&color=fff" class="rounded-circle shadow-sm me-2" alt="Avatar" width="38" height="38">
-                            <span class="fw-bold fs-6">A12-Vendor</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item py-2" href="/VendorProfiles/Index"><i class="fa-regular fa-user me-2 text-muted"></i>Tài khoản</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item py-2 text-danger" href="#"><i class="fa-solid fa-right-from-bracket me-2"></i>Đăng xuất</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </nav>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        </li>
+                    </ul>
 
-            <!-- Main Content Area -->
-            <div class="container-fluid p-4 main-content flex-grow-1">
-                @RenderBody()
-            </div>
-            
-            <footer class="footer text-muted py-3 text-center mt-auto border-top bg-white" style="flex-shrink: 0;">
-                <div class="container">
-                    &copy; 2026 - Smart Market Vendor Portal v1.0
+                    <ul class="navbar-nav align-items-center">
+                        @if (Context.Request.Cookies["VendorAuth"] != null)
+                        {
+                            <li class="nav-item me-2">
+                                <a class="nav-link p-0 d-flex align-items-center" asp-controller="Vendor" asp-action="Profile" title="Profile">
+                                    <span class="nav-avatar" aria-hidden="true">
+                                        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" class="w-100 h-100" role="img" aria-label="avatar">
+                                            <circle cx="18" cy="18" r="18" fill="#6c757d" />
+                                            <text x="50%" y="54%" text-anchor="middle" fill="white" font-size="18" font-family="Arial" dy=".3em">V</text>
+                                        </svg>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn nav-logout-btn">Logout</button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
+                            </li>
+                        }
+                    </ul>
                 </div>
-            </footer>
-        </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
     </div>
 
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - Vendor_FE - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>

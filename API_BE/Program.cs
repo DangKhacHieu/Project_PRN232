@@ -1,89 +1,107 @@
-using Microsoft.EntityFrameworkCore;
-using System;
+using System.Text;
 using System.Text.Json.Serialization;
-
-using System;
-using API_BE.Helpers;
-using CloudinaryDotNet;
 using BLL.Services.Implementations;
 using BLL.Services.Interfaces;
 using DAL.Data;
 using DAL.Repositories.Implementations;
 using DAL.Repositories.Interfaces;
-
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using CloudinaryDotNet; // Thêm cái này
+using API_BE.Helpers;   // Thêm cái này để lấy CloudinarySettings
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-
+// --- 1. CONFIG CONTROLLERS & JSON ---
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-	// Ngắt vòng lặp vô tận khi convert Entity sang JSON
-	options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-
-builder.Services.AddControllers();
-
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowVendorFE",
-        policy =>
-        {
-            policy.WithOrigins("https://localhost:7280", "http://localhost:5091")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
-});
-
-
+// --- 2. CONFIG DATABASE ---
 var connectionString = builder.Configuration.GetConnectionString("AppDbContext");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+// --- 3. CONFIG CLOUDINARY (PHẦN BỊ THIẾU) ---
+var cloudinarySettings = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
+if (cloudinarySettings != null)
+{
+    var account = new Account(
+        cloudinarySettings.CloudName,
+        cloudinarySettings.ApiKey,
+        cloudinarySettings.ApiSecret
+    );
+    var cloudinary = new Cloudinary(account);
+    builder.Services.AddSingleton(cloudinary); // Đăng ký đối tượng Cloudinary vào DI Container
+}
+
+// --- 4. REGISTER REPOSITORIES & SERVICES (DI) ---
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMarketRepository, MarketRepository>();
 builder.Services.AddScoped<IMarketService, MarketService>();
 builder.Services.AddScoped<IVendorRepository, VendorRepository>();
 builder.Services.AddScoped<IVendorService, VendorService>();
-builder.Services.AddCors(options =>
-{
-	options.AddPolicy("AllowAll", policy =>
-	{
-		policy.AllowAnyOrigin()
-			  .AllowAnyMethod()
-			  .AllowAnyHeader();
-	});
-});
-
-
+builder.Services.AddScoped<IVendorProfileRepository, VendorProfileRepository>();
+builder.Services.AddScoped<IVendorProfileService, VendorProfileService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
-builder.Services.AddScoped<IVendorProfileRepository, VendorProfileRepository>();
-builder.Services.AddScoped<IVendorProfileService, VendorProfileService>();
 
-var cloudinarySettings = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
-var account = new Account(
-    cloudinarySettings.CloudName,
-    cloudinarySettings.ApiKey,
-    cloudinarySettings.ApiSecret
-);
-var cloudinary = new Cloudinary(account);
-builder.Services.AddSingleton(cloudinary);
-
+// Quan trọng: PhotoService cần Cloudinary đã đăng ký ở mục 3
 builder.Services.AddScoped<IPhotoService, PhotoService>();
+
+// --- 5. CONFIG CORS ---
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// --- 6. JWT AUTHENTICATION ---
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var key = jwtSection.GetValue<string>("Key") ?? string.Empty;
+var issuer = jwtSection.GetValue<string>("Issuer") ?? string.Empty;
+var audience = jwtSection.GetValue<string>("Audience") ?? string.Empty;
+var keyBytes = Encoding.UTF8.GetBytes(key);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false; // Đổi thành false nếu chạy local không có SSL certificate thật
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+        ValidateIssuer = !string.IsNullOrEmpty(issuer),
+        ValidIssuer = issuer,
+        ValidateAudience = !string.IsNullOrEmpty(audience),
+        ValidAudience = audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero // Loại bỏ thời gian trễ mặc định của token
+    };
+});
+
 var app = builder.Build();
 
-
-
-
-// Configure the HTTP request pipeline.
+// --- 7. MIDDLEWARE PIPELINE ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -93,12 +111,12 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-//app.UseCors("AllowVendorFE"); // đóng code này để không bị xung đột khi chạy song song 2 project FE nhe (nếu mở ra là cái Admin không chạy đc)
+app.UseRouting();
 
-app.UseRouting(); // 1. BỔ SUNG DÒNG NÀY: Phải có Routing trước để hệ thống biết API đang đi đâu
+// Thứ tự cực kỳ quan trọng: Routing -> CORS -> Auth
+app.UseCors("AllowAll");
 
-app.UseCors("AllowAll"); // 2. CORS PHẢI NẰM NGAY ĐÂY: Dưới Routing và trên Authorization
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
