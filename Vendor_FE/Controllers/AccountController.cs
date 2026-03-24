@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Vendor_FE.Models;
@@ -28,9 +29,11 @@ namespace Vendor_FE.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+                return View(model);
 
             var client = _httpFactory.CreateClient("BackendAPI");
 
@@ -44,45 +47,32 @@ namespace Vendor_FE.Controllers
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    model.Error = "Login failed. Check credentials.";
+                    model.Error = "Sai tài khoản hoặc mật khẩu";
                     return View(model);
                 }
 
                 var data = await response.Content.ReadFromJsonAsync<LoginResultDto>();
                 if (data == null)
                 {
-                    model.Error = "Unexpected response from server.";
+                    model.Error = "Phản hồi từ server không hợp lệ";
                     return View(model);
                 }
 
-                Response.Cookies.Append("VendorAuth", data.Token, new Microsoft.AspNetCore.Http.CookieOptions
+                Response.Cookies.Append("VendorAuth", data.Token, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = Request.IsHttps,
-                    SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax
+                    SameSite = SameSiteMode.Lax
                 });
 
-                var roleId = data.RoleId;
-
-                if (roleId == 1)
-                {
-                    var adminUrl = _config["AdminAppUrl"];
-                    if (!string.IsNullOrEmpty(adminUrl))
-                        return Redirect(adminUrl);
-
+                if (data.RoleId == 1)
                     return Redirect("/Admin");
-                }
-
-                if (roleId == 2)
-                {
-                    return RedirectToAction("Index", "Home");
-                }
 
                 return RedirectToAction("Index", "Home");
             }
             catch (Exception ex)
             {
-                model.Error = "Cannot contact backend: " + ex.Message;
+                model.Error = "Không kết nối được server: " + ex.Message;
                 return View(model);
             }
         }
@@ -94,9 +84,16 @@ namespace Vendor_FE.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+                return View(model);
+
+            model.Email = model.Email?.Trim();
+            model.Phone = model.Phone?.Trim();
+            model.FullName = model.FullName?.Trim() ?? string.Empty;
+            model.BusinessName = model.BusinessName?.Trim();
 
             var client = _httpFactory.CreateClient("BackendAPI");
 
@@ -105,50 +102,39 @@ namespace Vendor_FE.Controllers
                 var response = await client.PostAsJsonAsync("api/auth/register", new
                 {
                     FullName = model.FullName,
+                    BusinessName = model.BusinessName,
                     Email = model.Email,
                     Phone = model.Phone,
-                    Password = model.Password,
-                    BusinessName = model.BusinessName
+                    Password = model.Password
                 });
 
-                if (response.IsSuccessStatusCode)
+                if (!response.IsSuccessStatusCode)
                 {
-                    return RedirectToAction("Login");
+                    string errorMessage = "Đăng ký thất bại";
+
+                    try
+                    {
+                        var error = await response.Content.ReadFromJsonAsync<ErrorDto>();
+                        if (!string.IsNullOrWhiteSpace(error?.message))
+                            errorMessage = error.message!;
+                    }
+                    catch
+                    {
+                        var raw = await response.Content.ReadAsStringAsync();
+                        if (!string.IsNullOrWhiteSpace(raw))
+                            errorMessage = raw;
+                    }
+
+                    model.Error = errorMessage;
+                    return View(model);
                 }
 
-                // Robustly read error content: try JSON then fallback to plain text
-                string errorMessage = "Registration failed.";
-                try
-                {
-                    var media = response.Content.Headers.ContentType?.MediaType;
-                    if (string.Equals(media, "application/json", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var err = await response.Content.ReadFromJsonAsync<ErrorDto>();
-                        if (!string.IsNullOrWhiteSpace(err?.message))
-                            errorMessage = err.message!;
-                        else
-                            errorMessage = await response.Content.ReadAsStringAsync();
-                    }
-                    else
-                    {
-                        var text = await response.Content.ReadAsStringAsync();
-                        if (!string.IsNullOrWhiteSpace(text))
-                            errorMessage = text;
-                    }
-                }
-                catch
-                {
-                    var text = await response.Content.ReadAsStringAsync();
-                    if (!string.IsNullOrWhiteSpace(text))
-                        errorMessage = text;
-                }
-
-                model.Error = errorMessage;
-                return View(model);
+                TempData["SuccessMessage"] = "Đăng ký thành công, vui lòng đăng nhập.";
+                return RedirectToAction("Login");
             }
             catch (Exception ex)
             {
-                model.Error = "Cannot contact backend: " + ex.Message;
+                model.Error = "Không kết nối được server: " + ex.Message;
                 return View(model);
             }
         }
@@ -161,7 +147,6 @@ namespace Vendor_FE.Controllers
             return RedirectToAction("Login");
         }
 
-        // GET: /Account/RequestOtpEmail
         [HttpGet]
         public IActionResult RequestOtpEmail()
         {
@@ -171,7 +156,6 @@ namespace Vendor_FE.Controllers
             return View(new RequestOtpEmailViewModel());
         }
 
-        // POST: /Account/RequestOtpEmail
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RequestOtpEmail(RequestOtpEmailViewModel model)
@@ -190,12 +174,11 @@ namespace Vendor_FE.Controllers
                 var resp = await client.PostAsJsonAsync("api/auth/request-change-password-otp", payload);
                 if (resp.IsSuccessStatusCode)
                 {
-                    TempData["OtpEmail"] = model.Email; // lưu email để hiển thị
+                    TempData["OtpEmail"] = model.Email;
                     TempData["SuccessMessage"] = "OTP was requested. Check your email.";
                     return RedirectToAction("EnterOtp");
                 }
 
-                // existing robust error reading...
                 string errorMessage = "Failed to request OTP.";
                 try
                 {
@@ -232,18 +215,17 @@ namespace Vendor_FE.Controllers
             }
         }
 
-        // GET EnterOtp
         [HttpGet]
         public IActionResult EnterOtp()
         {
-            if (Request.Cookies["VendorAuth"] == null) return RedirectToAction("Login");
+            if (Request.Cookies["VendorAuth"] == null)
+                return RedirectToAction("Login");
 
             var model = new EnterOtpViewModel
             {
                 Email = TempData["OtpEmail"] as string ?? string.Empty
             };
 
-            // keep email for next steps
             if (!string.IsNullOrEmpty(model.Email))
                 TempData.Keep("OtpEmail");
 
@@ -251,7 +233,6 @@ namespace Vendor_FE.Controllers
             return View(model);
         }
 
-        // POST EnterOtp -> call verify endpoint
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnterOtp(EnterOtpViewModel model)
@@ -270,17 +251,15 @@ namespace Vendor_FE.Controllers
                 var resp = await client.PostAsJsonAsync("api/auth/verify-change-password-otp", payload);
                 if (resp.IsSuccessStatusCode)
                 {
-                    // mark verified and store otp temporarily for the change step
                     TempData["OtpVerified"] = "1";
                     TempData["OtpCode"] = model.Otp;
-                    // keep email for next page
+
                     if (!string.IsNullOrEmpty(TempData["OtpEmail"] as string))
                         TempData.Keep("OtpEmail");
 
                     return RedirectToAction("ChangePassword");
                 }
 
-                // read error
                 string errorMessage = "OTP verification failed.";
                 try
                 {
@@ -317,7 +296,6 @@ namespace Vendor_FE.Controllers
             }
         }
 
-        // ChangePassword GET: chỉ cho phép vào khi OTP đã verified
         [HttpGet]
         public IActionResult ChangePassword()
         {
@@ -333,7 +311,6 @@ namespace Vendor_FE.Controllers
             ViewBag.OtpEmail = otpEmail;
             ViewBag.SuccessMessage = successMessage;
 
-            // keep data for POST
             TempData.Keep("OtpVerified");
             TempData.Keep("OtpCode");
             TempData.Keep("OtpEmail");
@@ -341,7 +318,6 @@ namespace Vendor_FE.Controllers
             return View(new ChangePasswordViewModel());
         }
 
-        // ChangePassword POST: send otp + new password to backend
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
@@ -352,7 +328,6 @@ namespace Vendor_FE.Controllers
             var otpEmail = TempData["OtpEmail"] as string;
             ViewBag.OtpEmail = otpEmail;
 
-            // keep for redisplay if needed
             if (!string.IsNullOrEmpty(otpEmail))
                 TempData.Keep("OtpEmail");
 
@@ -385,7 +360,6 @@ namespace Vendor_FE.Controllers
 
                 if (resp.IsSuccessStatusCode)
                 {
-                    // clear state
                     Response.Cookies.Delete("VendorAuth");
                     TempData.Remove("OtpVerified");
                     TempData.Remove("OtpCode");
