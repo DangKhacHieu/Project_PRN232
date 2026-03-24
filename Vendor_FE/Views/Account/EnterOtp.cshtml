@@ -1,32 +1,111 @@
 ﻿@model Vendor_FE.Models.EnterOtpViewModel
 
 @{
-    ViewData["Title"] = "Enter OTP";
+    ViewData["Title"] = "Nhập OTP";
+    Layout = null;
 }
 
-<h2>Enter OTP</h2>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Smart Market</title>
 
-@if (!string.IsNullOrEmpty(ViewBag.SuccessMessage as string))
-{
-    <div class="alert alert-success">@ViewBag.SuccessMessage</div>
-}
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-card shadow-lg">
+            <div class="text-center mb-4">
+                <div class="brand-icon mb-3">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h2 class="fw-bold mb-2">Nhập mã OTP</h2>
+                <p class="text-muted mb-0">Xác minh mã OTP đã gửi vào email của bạn</p>
+            </div>
 
-<form asp-action="EnterOtp" method="post">
-    @Html.AntiForgeryToken()
-    <div class="mb-3">
-        <label asp-for="Email" class="form-label">Email</label>
-        <input asp-for="Email" class="form-control" readonly />
+            @if (!string.IsNullOrEmpty(ViewBag.SuccessMessage as string))
+            {
+                <div class="alert alert-success">@ViewBag.SuccessMessage</div>
+            }
+
+            <form asp-action="EnterOtp" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                    <input asp-for="Email" class="form-control auth-control bg-light" readonly />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Otp" class="form-label fw-semibold">Mã OTP</label>
+                    <input asp-for="Otp" class="form-control auth-control" placeholder="Nhập mã OTP" />
+                    <span asp-validation-for="Otp" class="text-danger small"></span>
+                </div>
+
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-primary btn-lg auth-btn">Xác nhận OTP</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Otp" class="form-label">OTP</label>
-        <input asp-for="Otp" class="form-control" />
-        <span asp-validation-for="Otp" class="text-danger"></span>
-    </div>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #eef4ff 0%, #f8fbff 45%, #eef2f7 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
 
-    <button type="submit" class="btn btn-primary">Verify OTP</button>
-</form>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
 
-@section Scripts {
+        .auth-card {
+            width: 100%;
+            max-width: 460px;
+            background: #fff;
+            border: 0;
+            border-radius: 24px;
+            padding: 36px 32px;
+        }
+
+        .brand-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #0d6efd, #4f8cff);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 12px 28px rgba(13, 110, 253, 0.22);
+        }
+
+        .auth-control {
+            height: 52px;
+            border-radius: 14px;
+        }
+
+        .auth-btn {
+            border-radius: 14px;
+            font-weight: 600;
+            height: 54px;
+        }
+    </style>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <partial name="_ValidationScriptsPartial" />
-}
+</body>
+</html>

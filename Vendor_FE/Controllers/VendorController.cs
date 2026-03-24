@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Vendor_FE.Models;
+using System.Net.Http.Headers;
 
 namespace Vendor_FE.Controllers
 {
@@ -121,7 +122,9 @@ namespace Vendor_FE.Controllers
                     FullName = dto?.FullName,
                     BusinessName = dto?.BusinessName,
                     Description = dto?.Description,
-                    CoverImageUrl = dto?.CoverImageUrl
+                    CoverImageUrl = dto?.CoverImageUrl,
+                    Email = dto?.Email,
+                    Phone = dto?.Phone
                 };
 
                 return View(model);
@@ -157,6 +160,10 @@ namespace Vendor_FE.Controllers
                 content.Add(new StringContent(model.Description), "Description");
             if (!string.IsNullOrEmpty(model.FullName))
                 content.Add(new StringContent(model.FullName), "FullName");
+            if (!string.IsNullOrEmpty(model.Email))
+                content.Add(new StringContent(model.Email), "Email");
+            if (!string.IsNullOrEmpty(model.Phone))
+                content.Add(new StringContent(model.Phone), "Phone");
 
             // add file if provided
             if (model.AvatarFile != null && model.AvatarFile.Length > 0)
@@ -198,6 +205,9 @@ namespace Vendor_FE.Controllers
             public string? Description { get; set; }
             public string? CoverImageUrl { get; set; }
             public string? FullName { get; set; }
+            // include email/phone if backend returns them
+            public string? Email { get; set; }
+            public string? Phone { get; set; }
         }
 
         private static string Base64UrlDecode(string input)
