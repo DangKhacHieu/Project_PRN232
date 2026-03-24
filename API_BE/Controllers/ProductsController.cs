@@ -24,7 +24,6 @@ namespace API_BE.Controllers
         }
 
         [HttpPost]
-        // Bắt buộc dùng [FromForm] vì có gửi kèm File ảnh
         public async Task<IActionResult> CreateProduct([FromForm] ProductCreateRequestDTO request)
         {
             // 1. Kiểm tra dữ liệu đầu vào (Validation)
@@ -49,7 +48,6 @@ namespace API_BE.Controllers
             }
             catch (Exception ex)
             {
-                // Bắt lỗi server và trả về status 500
                 return StatusCode(500, new { Success = false, Message = $"Lỗi hệ thống: {ex.Message}" });
             }
         }
@@ -97,6 +95,13 @@ namespace API_BE.Controllers
             //var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
             //return claim != null ? int.Parse(claim.Value) : 0;
             return 4;
+        }
+
+        [HttpGet("categories")]
+        public async Task<IActionResult> GetCategories()
+        {
+            var categories = await _productService.GetCategoriesAsync();
+            return Ok(categories);
         }
     }
 }

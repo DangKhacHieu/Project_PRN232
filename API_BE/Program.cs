@@ -15,8 +15,6 @@ using DAL.Repositories.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
-
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
 	// Ngắt vòng lặp vô tận khi convert Entity sang JSON
@@ -25,10 +23,8 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowVendorFE",
@@ -58,7 +54,6 @@ builder.Services.AddCors(options =>
 	});
 });
 
-
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
@@ -80,9 +75,6 @@ builder.Services.AddSingleton(cloudinary);
 builder.Services.AddScoped<IPhotoService, PhotoService>();
 var app = builder.Build();
 
-
-
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -93,11 +85,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-//app.UseCors("AllowVendorFE"); // đóng code này để không bị xung đột khi chạy song song 2 project FE nhe (nếu mở ra là cái Admin không chạy đc)
+app.UseRouting();
 
-app.UseRouting(); // 1. BỔ SUNG DÒNG NÀY: Phải có Routing trước để hệ thống biết API đang đi đâu
-
-app.UseCors("AllowAll"); // 2. CORS PHẢI NẰM NGAY ĐÂY: Dưới Routing và trên Authorization
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 

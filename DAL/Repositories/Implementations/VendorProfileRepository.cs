@@ -18,6 +18,8 @@ namespace DAL.Repositories.Implementations
         public async Task<VendorProfile?> GetByVendorIdAsync(int vendorId)
         {
             return await _context.VendorProfiles
+                .Include(v => v.StallContracts)
+                    .ThenInclude(sc => sc.Stall)
                 .FirstOrDefaultAsync(v => v.VendorId == vendorId);
         }
 

@@ -116,8 +116,8 @@
                     $('#qrLoading').hide();
                 },
                 error: function () {
-                    alert('Có lỗi khi tạo mã QR. Vui lòng thử lại sau!');
                     $('#paymentModal').modal('hide');
+                    Swal.fire('Lỗi', 'Có lỗi khi tạo mã QR. Vui lòng thử lại sau!', 'error');
                 }
             });
         }

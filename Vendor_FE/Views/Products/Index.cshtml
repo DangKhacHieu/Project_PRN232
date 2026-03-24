@@ -110,7 +110,7 @@
                                 <a href="/Products/Edit/@item.ProductId" class="btn btn-outline-primary btn-sm px-3 rounded-pill">
                                     <i class="fa-solid fa-pen-to-square me-1"></i> Sửa
                                 </a>
-                                <form action="/Products/Delete/@item.ProductId" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
+                                <form action="/Products/Delete/@item.ProductId" method="post" class="d-inline" onsubmit="return confirmAction(event, this, 'Xác nhận xóa', 'Bạn có chắc chắn muốn xóa sản phẩm này không?', 'warning', 'btn-danger');">
                                     <button type="submit" class="btn btn-outline-danger btn-sm px-3 rounded-pill">
                                         <i class="fa-solid fa-trash me-1"></i> Xoá
                                     </button>

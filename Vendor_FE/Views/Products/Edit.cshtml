@@ -23,7 +23,8 @@
                     <div asp-validation-summary="All"></div>
                 </div>
             }
-            <form method="post" action="/Products/Edit/@ViewBag.ProductId" enctype="multipart/form-data">
+            <div id="validation-errors" class="alert alert-danger d-none mb-4"></div>
+            <form id="productForm" method="post" action="/Products/Edit/@ViewBag.ProductId" enctype="multipart/form-data">
                 <div class="row">
                     <!-- Right Column: Image Upload -->
                     <div class="col-12 col-md-4 mb-4 mb-md-0 order-md-2">
@@ -53,17 +54,15 @@
                         <div class="row g-4 mb-4">
                             <div class="col-md-6">
                                 <label for="categoryId" class="form-label fw-bold"><i class="fa-solid fa-tags me-2"></i>Danh Mục</label>
-                                <select class="form-select form-select-lg rounded-3" id="categoryId" name="CategoryId">
-                                    <option value="1" selected="@(Model?.CategoryId == 1 ? "selected" : null)">Thời Trang Nam</option>
-                                    <option value="2" selected="@(Model?.CategoryId == 2 ? "selected" : null)">Thời Trang Nữ</option>
-                                    <option value="3" selected="@(Model?.CategoryId == 3 ? "selected" : null)">Thực Phẩm Tươi</option>
-                                    <option value="4" selected="@(Model?.CategoryId == 4 ? "selected" : null)">Đồ Khô</option>
-                                    <option value="5" selected="@(Model?.CategoryId == 5 ? "selected" : null)">Giày Dép</option>
-                                    <option value="6" selected="@(Model?.CategoryId == 6 ? "selected" : null)">Gia dụng</option>
-                                    <option value="7" selected="@(Model?.CategoryId == 7 ? "selected" : null)">Mỹ Phẩm</option>
-                                    <option value="8" selected="@(Model?.CategoryId == 8 ? "selected" : null)">Trái Cây</option>
-                                    <option value="9" selected="@(Model?.CategoryId == 9 ? "selected" : null)">Hoa Tươi</option>
-                                    <option value="10" selected="@(Model?.CategoryId == 10 ? "selected" : null)">Đồ Uống</option>
+                                <select class="form-select" name="CategoryId">
+                                    <option value="">Chọn danh mục (Tuỳ chọn)</option>
+                                    @if (ViewBag.Categories != null)
+                                    {
+                                        foreach (var cat in (Dictionary<int, string>)ViewBag.Categories)
+                                        {
+                                            <option value="@cat.Key" selected="@(Model?.CategoryId == cat.Key ? "selected" : null)">@cat.Value</option>
+                                        }
+                                    }
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -115,6 +114,8 @@
         const uploadArea = document.getElementById('imageUploadArea');
         const fileInput = document.getElementById('productImage');
         const preview = document.getElementById('imagePreview');
+        const form = document.getElementById('productForm');
+        const errorContainer = document.getElementById('validation-errors');
 
         uploadArea.addEventListener('click', () => fileInput.click());
 
@@ -128,4 +129,54 @@
                 reader.readAsDataURL(file);
             }
         });
+
+        function countWords(str) {
+            return str.trim().split(/\s+/).filter(word => word.length > 0).length;
+        }
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            
+            const nameField = document.getElementById('productName').value.trim();
+            const unitField = document.getElementById('unit').value.trim();
+            const priceField = document.getElementById('price').value.trim();
+            
+            errorContainer.innerHTML = '';
+            let errors = [];
+
+            // 1. Kiểm tra rỗng
+            if (!nameField) errors.push("Tên sản phẩm không được để trống.");
+            if (!unitField) errors.push("Đơn vị tính không được để trống.");
+            if (!priceField || isNaN(priceField) || Number(priceField) < 0) errors.push("Giá bán không hợp lệ (phải là số lớn hơn hoặc bằng 0).");
+
+            // 2. Kiểm tra ký tự đặc biệt
+            const specialCharPattern = /[!@@#$%^&*()_+=\[\]{};'"\\|<>\/?]+/;
+            if (specialCharPattern.test(nameField)) {
+                errors.push("Tên sản phẩm không được chứa ký tự đặc biệt.");
+            }
+            if (specialCharPattern.test(unitField)) {
+                errors.push("Đơn vị tính không được chứa ký tự đặc biệt.");
+            }
+
+            // 3. Kiểm tra số lượng từ
+            if (countWords(nameField) > 20) {
+                errors.push(`Tên sản phẩm quá dài (${countWords(nameField)}/20 từ).`);
+            }
+            if (countWords(unitField) > 5) {
+                errors.push(`Đơn vị tính quá dài (${countWords(unitField)}/5 từ).`);
+            }
+
+            if (errors.length > 0) {
+                errorContainer.innerHTML = "<strong>Vui lòng sửa các lỗi sau:</strong><ul>" + errors.map(err => `<li>${err}</li>`).join('') + "</ul>";
+                errorContainer.classList.remove('d-none');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            } else {
+                errorContainer.classList.add('d-none');
+            }
+
+            // 4. Xác nhận lưu
+            confirmAction(null, form, 'Lưu thay đổi', 'Bạn có chắc chắn muốn lưu các thay đổi này không?', 'question', 'btn-primary');
+        });
+    });
 </script>

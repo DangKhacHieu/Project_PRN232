@@ -136,5 +136,16 @@ namespace BLL.Services.Implementations
             await _productRepo.CreateAsync(newProduct);
             return newProduct.ProductId;
         }
+
+        // 5. LẤY DANH SÁCH DANH MỤC SẢN PHẨM
+        public async Task<IEnumerable<CategoryDTO>> GetCategoriesAsync()
+        {
+            var categories = await _productRepo.GetCategoriesAsync();
+            return categories.Select(c => new CategoryDTO
+            {
+                CategoryId = c.CategoryId,
+                CategoryName = c.CategoryName
+            });
+        }
     }
 }

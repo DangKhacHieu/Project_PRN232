@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,5 +13,6 @@ namespace DAL.Repositories.Interfaces
         Task<Product?> GetByIdAndVendorIdAsync(int productId, int vendorId);
         Task CreateAsync(Product product);
         Task UpdateAsync(Product product);
+        Task<IEnumerable<ProductCategory>> GetCategoriesAsync();
     }
 }

@@ -50,5 +50,13 @@ namespace DAL.Repositories.Implementations
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<ProductCategory>> GetCategoriesAsync()
+        {
+            return await _context.ProductCategories
+                .Where(c => !c.IsDeleted)
+                .OrderBy(c => c.CategoryName)
+                .ToListAsync();
+        }
     }
 }

@@ -14,7 +14,7 @@
 
     <div class="card shadow border-0 rounded-4">
         <div class="card-body p-4 p-md-5">
-            <form method="post" action="/Support/Create" enctype="multipart/form-data">
+            <form method="post" action="/Support/Create" enctype="multipart/form-data" onsubmit="return confirmAction(event, this, 'Xác nhận gửi', 'Bạn có chắc chắn muốn gửi báo cáo sự cố này không?', 'question', 'btn-success');">
                 <div class="mb-4">
                     <label class="form-label fw-bold"><i class="fa-solid fa-font me-2"></i>Tiêu đề sự cố <span class="text-danger">*</span></label>
                     <input type="text" name="Title" class="form-control form-control-lg rounded-3 bg-light" required maxlength="200" placeholder="VD: Hư hỏng đường ống nước tại sạp A12" />
@@ -25,9 +25,20 @@
                     <textarea name="Description" class="form-control rounded-3 bg-light" rows="5" required placeholder="Vui lòng mô tả rõ tình trạng để Ban quản lý chuẩn bị vật tư..."></textarea>
                 </div>
 
-                <div class="mb-5 p-4 border rounded-4 bg-light text-center">
-                    <label class="form-label fw-bold mb-3 d-block"><i class="fa-solid fa-images me-2"></i>Đính kèm hình ảnh hiện trường (Tối đa 3 ảnh)</label>
-                    <input type="file" name="Images" class="form-control bg-white shadow-sm rounded-3" accept="image/*" multiple />
+                <div class="mb-5 p-4 border rounded-4 bg-light">
+                    <label class="form-label fw-bold mb-3 d-block text-center"><i class="fa-solid fa-images me-2"></i>Đính kèm hình ảnh hiện trường (Tối đa 3 ảnh)</label>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap" id="imagePreviews">
+                        <!-- Nút Add -->
+                        <div class="card bg-white text-center d-flex flex-column justify-content-center align-items-center hover-lift position-relative" style="width: 120px; height: 120px; border: 2px dashed #adb5bd !important; border-radius: 1rem; cursor: pointer;" id="addImgBtn">
+                            <i class="fa-solid fa-plus fa-2x text-muted mb-1"></i>
+                            <small class="text-muted fw-bold">Thêm ảnh</small>
+                        </div>
+                    </div>
+
+                    <!-- 3 input ẩn -->
+                    <input type="file" name="Images" id="imgInput0" class="d-none img-input" accept="image/*" data-index="0">
+                    <input type="file" name="Images" id="imgInput1" class="d-none img-input" accept="image/*" data-index="1">
+                    <input type="file" name="Images" id="imgInput2" class="d-none img-input" accept="image/*" data-index="2">
                 </div>
 
                 <div class="d-flex justify-content-end gap-3 border-top pt-4">
@@ -45,4 +56,77 @@
     .max-w-800 { max-width: 800px; margin: 0 auto; }
     .hover-lift { transition: transform 0.2s; }
     .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
-</style>
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const addBtn = document.getElementById('addImgBtn');
+        const container = document.getElementById('imagePreviews');
+        let currentImageCount = 0;
+
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                for (let i = 0; i < 3; i++) {
+                    const input = document.getElementById(`imgInput${i}`);
+                    if (!input.value) {
+                        input.click();
+                        break;
+                    }
+                }
+            });
+        }
+
+        document.querySelectorAll('.img-input').forEach(input => {
+            input.addEventListener('change', function () {
+                if (this.files && this.files[0]) {
+                    const idx = this.getAttribute('data-index');
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        let existingBox = document.getElementById(`previewBox${idx}`);
+                        if (existingBox) existingBox.remove();
+
+                        const div = document.createElement('div');
+                        div.className = "position-relative border bg-white overflow-hidden shadow-sm";
+                        div.style.width = "120px";
+                        div.style.height = "120px";
+                        div.style.borderRadius = "1rem";
+                        div.id = `previewBox${idx}`;
+                        div.innerHTML = `
+                            <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 rounded-circle d-flex justify-content-center align-items-center p-0 shadow" style="width: 24px; height: 24px;" onclick="removeImg(${idx})">
+                                <i class="fa-solid fa-times" style="font-size: 12px;"></i>
+                            </button>
+                        `;
+                        container.insertBefore(div, addBtn);
+                        currentImageCount++;
+                        updateAddBtn();
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        });
+
+        window.removeImg = function(idx) {
+            document.getElementById(`imgInput${idx}`).value = ''; 
+            const box = document.getElementById(`previewBox${idx}`);
+            if (box) box.remove();
+            
+            let count = 0;
+            for (let i = 0; i < 3; i++) {
+                if(document.getElementById(`imgInput${i}`).value) count++;
+            }
+            currentImageCount = count;
+            updateAddBtn();
+        }
+
+        function updateAddBtn() {
+            if (currentImageCount >= 3) {
+                addBtn.classList.add('d-none');
+                addBtn.classList.remove('d-flex');
+            } else {
+                addBtn.classList.remove('d-none');
+                addBtn.classList.add('d-flex');
+            }
+        }
+    });
+</script>
