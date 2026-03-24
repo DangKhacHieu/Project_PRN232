@@ -248,16 +248,13 @@ namespace Vendor_FE.Controllers
                     momoTransactionId = transId.ToString()
                 };
 
-                var response = await client.PostAsJsonAsync($"api/Invoices/{invoiceId}/pay", payload);
-                TempData[response.IsSuccessStatusCode ? "Success" : "Error"] = response.IsSuccessStatusCode
-                    ? "Thanh toán MoMo thành công! Vui lòng chờ nhân viên xác nhận."
-                    : "Thanh toán thành công nhưng cập nhật trạng thái thất bại. Vui lòng liên hệ quản lý.";
+                await client.PostAsJsonAsync($"api/Invoices/{invoiceId}/pay", payload);
+                return RedirectToAction(nameof(Index), new { paid = 1 });
             }
             else
             {
-                TempData["Error"] = $"Thanh toán MoMo thất bại: {message ?? "Giao dịch bị huỷ."}";
+                return RedirectToAction(nameof(Index), new { paid = 0, msg = message ?? "Giao dịch bị huỷ." });
             }
-            return RedirectToAction(nameof(Index));
         }
     }
 }
