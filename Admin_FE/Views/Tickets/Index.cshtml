@@ -1,0 +1,214 @@
+﻿@model IEnumerable<BLL.DTOs.SupportTicketDTO>
+
+<div class="container-fluid">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h4 class="fw-bold"><i class="bi bi-headset"></i> Trung tâm Tiếp nhận Sự cố</h4>
+            <p class="text-muted mb-0">Quản lý và cập nhật tiến độ xử lý yêu cầu từ tiểu thương</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body bg-light rounded">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-primary"></i></span>
+                        <input type="text" id="ticketSearch" class="form-control" placeholder="Tìm kiếm mã số, tiêu đề hoặc người báo...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select id="statusFilter" class="form-select border-primary">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="PENDING">⏳ Chờ xử lý</option>
+                        <option value="PROCESSING">🛠️ Đang sửa</option>
+                        <option value="RESOLVED">✅ Đã xong</option>
+                        <option value="CLOSED">🔒 Đóng</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-secondary w-100" onclick="resetTicketFilters()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Làm mới bộ lọc
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="ticketTable">
+                <thead class="bg-light text-secondary">
+                    <tr>
+                        <th class="ps-4">Mã số</th>
+                        <th>Thông tin sự cố</th>
+                        <th>Người báo</th>
+                        <th>Ngày gửi</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var t in Model)
+                        {
+                            <tr class="ticket-row">
+                                <td class="ps-4 fw-bold text-primary">#@t.TicketId</td>
+                                <td>
+                                    <div class="fw-bold text-dark ticket-title">@t.Title</div>
+                                    <div class="small text-muted text-truncate" style="max-width: 300px;">@t.Description</div>
+                                </td>
+                                <td class="ticket-vendor">
+                                    <div>@t.VendorName</div>
+                                    <small class="text-muted">📞 @t.VendorPhone</small>
+                                </td>
+                                <td>@t.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    <select class="form-select form-select-sm fw-bold ticket-status-select @GetStatusClass(t.Status)"
+                                            onchange="updateStatus(@t.TicketId, this.value)">
+                                        <option value="PENDING" selected="@(t.Status == "PENDING")">⏳ Chờ xử lý</option>
+                                        <option value="PROCESSING" selected="@(t.Status == "PROCESSING")">🛠️ Đang sửa</option>
+                                        <option value="RESOLVED" selected="@(t.Status == "RESOLVED")">✅ Đã xong</option>
+                                        <option value="CLOSED" selected="@(t.Status == "CLOSED")">🔒 Đóng</option>
+                                    </select>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-info rounded-pill" onclick="showImages(@t.TicketId)">
+                                        <i class="bi bi-image"></i> Xem ảnh (@t.Images.Count)
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">Chưa có sự cố nào được báo cáo.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusClass(string status) => status switch
+    {
+        "PENDING" => "text-warning",
+        "PROCESSING" => "text-primary",
+        "RESOLVED" => "text-success",
+        "CLOSED" => "text-secondary",
+        _ => ""
+    };
+}
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const API_URL = "https://localhost:7169/api/SupportTickets";
+
+        $(document).ready(function () {
+            // Lắng nghe sự kiện filter
+            $('#ticketSearch, #statusFilter').on('keyup change', function () {
+                applyTicketFilters();
+            });
+        });
+
+        // 1. HÀM LỌC SỰ CỐ (Client-side)
+        function applyTicketFilters() {
+            const search = $('#ticketSearch').val().toLowerCase().trim();
+            const status = $('#statusFilter').val();
+
+            $('.ticket-row').each(function () {
+                const row = $(this);
+                const title = row.find('.ticket-title').text().toLowerCase();
+                const vendor = row.find('.ticket-vendor').text().toLowerCase();
+                const id = row.find('td:first').text().toLowerCase();
+                const currentStatus = row.find('.ticket-status-select').val();
+
+                const matchesSearch = title.includes(search) || vendor.includes(search) || id.includes(search);
+                const matchesStatus = status === "" || currentStatus === status;
+
+                if (matchesSearch && matchesStatus) {
+                    row.show();
+                } else {
+                    row.hide();
+                }
+            });
+        }
+
+        function resetTicketFilters() {
+            $('#ticketSearch').val('');
+            $('#statusFilter').val('');
+            $('.ticket-row').show();
+        }
+
+        // 2. HÀM CẬP NHẬT TRẠNG THÁI (Ajax)
+        function updateStatus(id, newStatus) {
+            Swal.fire({
+                title: 'Cập nhật tiến độ?',
+                text: "Bạn có chắc chắn muốn chuyển trạng thái này không?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0d6efd',
+                confirmButtonText: 'Đồng ý'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `${API_URL}/update-status/${id}`,
+                        type: 'PUT',
+                        contentType: 'application/json',
+                        data: JSON.stringify(newStatus),
+                        success: function () {
+                            Swal.fire('Thành công!', 'Đã cập nhật trạng thái.', 'success')
+                                .then(() => location.reload());
+                        },
+                        error: function (xhr) {
+                            // Lỗi do sai luồng trạng thái từ Controller BE
+                            Swal.fire('Lỗi!', xhr.responseText || 'Cập nhật thất bại.', 'error')
+                                .then(() => location.reload());
+                        }
+                    });
+                } else {
+                    location.reload();
+                }
+            });
+        }
+
+        // 3. HÀM XEM ẢNH (Gọi API lấy chi tiết)
+        function showImages(ticketId) {
+            Swal.fire({ title: 'Đang tải ảnh...', didOpen: () => { Swal.showLoading(); } });
+
+            $.get(`${API_URL}/${ticketId}`, function(data) {
+                Swal.close();
+                if (!data.images || data.images.length === 0) {
+                    Swal.fire('Thông báo', 'Không có ảnh đính kèm.', 'info');
+                    return;
+                }
+
+                let html = '<div class="row g-2">';
+                data.images.forEach(url => {
+                    html += `
+                        <div class="col-6">
+                            <a href="${url}" target="_blank">
+                                <img src="${url}" class="img-fluid rounded border shadow-sm" style="height:150px; width:100%; object-fit:cover;">
+                            </a>
+                        </div>`;
+                });
+                html += '</div>';
+
+                Swal.fire({
+                    title: 'Hình ảnh hiện trường',
+                    html: html,
+                    width: 600,
+                    showCloseButton: true
+                });s
+            }).fail(function() {
+                Swal.fire('Lỗi', 'Không thể lấy dữ liệu ảnh từ server.', 'error');
+            });
+        }
+    </script>
+}

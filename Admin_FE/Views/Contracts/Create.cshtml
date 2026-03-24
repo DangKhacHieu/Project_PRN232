@@ -1,0 +1,256 @@
+﻿@model BLL.DTOs.StallContractDTO
+@{
+    ViewData["Title"] = "Thiết lập Hợp đồng mới";
+    // Lấy ngày hiện tại định dạng yyyy-MM-dd để gán cho thuộc tính min
+    var today = DateTime.Now.ToString("yyyy-MM-dd");
+    var sixMonthsLater = DateTime.Now.AddMonths(6).ToString("yyyy-MM-dd");
+}
+
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        .select-step {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 45px;
+            align-items: center;
+        }
+
+        .error-msg, .text-danger {
+            color: #dc3545;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: block;
+        }
+
+        input.error, select.error {
+            border-color: #dc3545 !important;
+        }
+    </style>
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center">
+                    <span class="fs-4 me-2">📝</span>
+                    <h5 class="mb-0 fw-bold">Tạo Hợp Đồng Thuê Sạp Mới</h5>
+                </div>
+
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post" id="formCreateContract">
+                        @Html.AntiForgeryToken()
+
+                        <div class="select-step mb-4">
+                            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-geo-alt-fill"></i> Bước 1: Xác định vị trí thuê</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Chọn Chợ <span class="text-danger">*</span></label>
+                                    <select id="ddlMarket" class="form-select border-primary shadow-sm" required>
+                                        <option value="">-- Chọn chợ --</option>
+                                        @if (ViewBag.Markets != null)
+                                        {
+                                            foreach (var m in ViewBag.Markets)
+                                            {
+                                                <option value="@m.MarketId">@m.MarketName</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Khu vực <span class="text-danger">*</span></label>
+                                    <select id="ddlZone" class="form-select" disabled required>
+                                        <option value="">-- Chọn khu vực --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="StallId" class="form-label small fw-bold text-danger">Mã Sạp Trống *</label>
+                                    <select asp-for="StallId" id="ddlStall" class="form-select border-danger shadow-sm" required>
+                                        <option value="">-- Chọn sạp --</option>
+                                    </select>
+                                    <span asp-validation-for="StallId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-dark mb-3">Bước 2: Thông tin đối tác</h6>
+                            <label asp-for="VendorId" class="form-label fw-bold">Chọn Tiểu thương <span class="text-danger">*</span></label>
+                            <select asp-for="VendorId" id="ddlVendor" class="form-select" required asp-items="@(new SelectList(ViewBag.Vendors, "VendorId", "BusinessName"))">
+                                <option value="">-- Gõ tên sạp hoặc tên chủ hộ để tìm --</option>
+                            </select>
+                            <span asp-validation-for="VendorId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-dark mb-3">Bước 3: Chi tiết hợp đồng & Tài chính</h6>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label asp-for="StartDate" class="form-label fw-bold">Ngày bắt đầu <span class="text-danger">*</span></label>
+                                    @* Khóa ngày bắt đầu không được chọn quá khứ bằng min="@today" *@
+                                    <input asp-for="StartDate" type="date" class="form-control" id="StartDate"
+                                           value="@today" min="@today" required />
+                                    <span asp-validation-for="StartDate" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="EndDate" class="form-label fw-bold">Ngày kết thúc <span class="text-danger">*</span></label>
+                                    @* Ngày kết thúc cũng không được là quá khứ *@
+                                    <input asp-for="EndDate" type="date" class="form-control" id="EndDate"
+                                           value="@sixMonthsLater" min="@today" required />
+                                    <span asp-validation-for="EndDate" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="MonthlyRent" class="form-label fw-bold">Giá thuê tháng (VNĐ) <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₫</span>
+                                        <input asp-for="MonthlyRent" type="number" class="form-control" id="MonthlyRent" min="1000" required />
+                                    </div>
+                                    <span asp-validation-for="MonthlyRent" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="DepositAmount" class="form-label fw-bold">Tiền đặt cọc (VNĐ)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₫</span>
+                                        <input asp-for="DepositAmount" type="number" class="form-control" id="DepositAmount" min="0" />
+                                    </div>
+                                    <span asp-validation-for="DepositAmount" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <input type="hidden" asp-for="Status" value="ACTIVE" />
+
+                        <div class="mt-5 pt-3 border-top d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold">🚀 Xác nhận ký hợp đồng</button>
+                            <a href="@Url.Action("Index", "Contracts")" class="btn btn-light border px-4">Hủy bỏ</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* Thêm các thư viện validation mặc định của ASP.NET Core *@
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Chuyển các biến C# sang biến JS một cách an toàn để trình soạn thảo không báo lỗi đỏ
+            const API_URL = "https://localhost:7169";
+            const todayStr = "@today";
+
+            // 1. Khởi tạo Select2
+            $('#ddlVendor').select2({
+                theme: 'bootstrap-5',
+                placeholder: '-- Gõ tên sạp hoặc SĐT để tìm --',
+                allowClear: true
+            });
+
+            // 2. Load Khu vực khi chọn Chợ
+            $('#ddlMarket').on('change', function () {
+                const marketId = $(this).val();
+                const $ddlZone = $('#ddlZone');
+                const $ddlStall = $('#ddlStall');
+
+                $ddlZone.empty().append('<option value="">-- Chọn khu vực --</option>').prop('disabled', true);
+                $ddlStall.empty().append('<option value="">-- Chọn sạp --</option>').prop('disabled', true);
+
+                if (marketId) {
+                    $.get(API_URL + "/api/StallContracts/zones/" + marketId, function (data) {
+                        $ddlZone.prop('disabled', false);
+                        $.each(data, function (i, zone) {
+                            $ddlZone.append($('<option>', { value: zone.zoneId, text: zone.zoneName }));
+                        });
+                    });
+                }
+            });
+
+            // 3. Load Sạp khi chọn Khu vực
+            $('#ddlZone').on('change', function () {
+                const zoneId = $(this).val();
+                const $ddlStall = $('#ddlStall');
+
+                $ddlStall.empty().append('<option value="">-- Chọn sạp --</option>').prop('disabled', true);
+                if (zoneId) {
+                    $.get(API_URL + "/api/StallContracts/vacant-stalls/" + zoneId, function (data) {
+                        $ddlStall.prop('disabled', false);
+                        $.each(data, function (i, stall) {
+                            $ddlStall.append($('<option>', { value: stall.stallId, text: stall.stallCode }));
+                        });
+                    });
+                }
+            });
+
+            // 4. Xử lý Validation và Submit form
+            $('#formCreateContract').on('submit', function (e) {
+                e.preventDefault();
+                const $form = $(this);
+
+                // Kiểm tra validation của ASP.NET Core Unobtrusive
+                if (!$form.valid()) return false;
+
+                const startVal = $('#StartDate').val();
+                const endVal = $('#EndDate').val();
+                const startDate = new Date(startVal);
+                const endDate = new Date(endVal);
+                const today = new Date(todayStr);
+                today.setHours(0, 0, 0, 0);
+
+                if (startDate < today) {
+                    Swal.fire({ icon: 'error', title: 'Ngày bắt đầu không hợp lệ', text: 'Ngày bắt đầu không được là quá khứ!' });
+                    return false;
+                }
+
+                if (endDate <= startDate) {
+                    Swal.fire({ icon: 'error', title: 'Lỗi thời hạn', text: 'Ngày kết thúc phải sau ngày bắt đầu ít nhất 1 ngày!' });
+                    return false;
+                }
+
+                // Popup xác nhận
+                Swal.fire({
+                    title: 'Xác nhận ký hợp đồng?',
+                    text: "Sạp sẽ được chuyển trạng thái sang 'Đã thuê'.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Đồng ý',
+                    cancelButtonText: 'Hủy'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                        this.submit();
+                    }
+                });
+            });
+
+            // 5. Hiển thị thông báo TempData (Dùng thẻ <text> để bọc code JS)
+            @if (TempData["Success"] != null)
+            {
+                    <text>
+                    Swal.fire({ icon: 'success', title: 'Thành công!', text: '@Html.Raw(TempData["Success"])', timer: 3000 });
+                    </text>
+            }
+            @if (TempData["Error"] != null)
+            {
+                    <text>
+                    Swal.fire({ icon: 'error', title: 'Lỗi hệ thống', text: '@Html.Raw(TempData["Error"])' });
+                    </text>
+            }
+        });
+    </script>
+}

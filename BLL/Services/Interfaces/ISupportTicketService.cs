@@ -14,5 +14,9 @@ namespace BLL.Services.Interfaces
         Task<bool> ConfirmTicketAsync(int ticketId, int vendorId);
         Task<bool> ProcessTicketAsync(int ticketId);
         Task<bool> ResolveTicketAsync(int ticketId);
+        Task<IEnumerable<SupportTicketDTO>> GetAllTickets();
+        Task<bool> UpdateStatus(int id, string newStatus);
+        Task<SupportTicketDTO> GetTicketById(int id);
+
     }
 }

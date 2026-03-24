@@ -111,6 +111,37 @@
                         <span>🧑‍🤝‍🧑</span> <span>Danh sách tiểu thương</span>
                     </a>
                 </li>
+                <li class="nav-item mt-3 mb-1">
+                    <small class="text-muted px-3 text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Nghiệp vụ thuê sạp</small>
+                </li>
+
+                <li class="nav-item mb-1">
+                    <a class="nav-link @isActive("Contracts", "Index")" href="@Url.Action("Index", "Contracts")">
+                        <span>📄</span> <span>Danh sách hợp đồng</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mb-1">
+                    <a class="nav-link @isActive("Contracts", "Create")" href="@Url.Action("Create", "Contracts")">
+                        <span>➕</span> <span>Tạo hợp đồng mới</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mb-1">
+                    <a class="nav-link @isActive("Contracts", "History")" href="@Url.Action("History", "Contracts")">
+                        <span>📜</span> <span>Lịch sử biến động</span>
+                    </a>
+                </li>
+                <li class="nav-item mt-3 mb-1">
+                    <small class="text-muted px-3 text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Hỗ trợ tiểu thương</small>
+                </li>
+
+                <li class="nav-item mb-1">
+                    <a class="nav-link @isActive("Tickets", "Index")" href="@Url.Action("Index", "Tickets")">
+                        <span>🛠️</span> <span>Danh sách sự cố</span>
+                        @* Bạn có thể thêm badge hiển thị số lượng sự cố mới ở đây nếu muốn *@
+                    </a>
+                </li>
 
                 <!-- Add more admin links here -->
             </ul>

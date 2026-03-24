@@ -1,16 +1,32 @@
+
 using System.Text;
 using System.Text.Json.Serialization;
+
+using API_BE.Helpers;
+
 using BLL.Services.Implementations;
 using BLL.Services.Interfaces;
+using CloudinaryDotNet;
 using DAL.Data;
 using DAL.Repositories.Implementations;
 using DAL.Repositories.Interfaces;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using CloudinaryDotNet; // Thêm cái này
 using API_BE.Helpers;   // Thêm cái này để lấy CloudinarySettings
 
+
+using Microsoft.EntityFrameworkCore;
+using System;
+using System;
+using System.Text.Json.Serialization;
+
+
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. CONFIG CONTROLLERS & JSON ---
@@ -56,8 +72,15 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 
+builder.Services.AddScoped<IVendorProfileRepository, VendorProfileRepository>();
+builder.Services.AddScoped<IVendorProfileService, VendorProfileService>();
+builder.Services.AddScoped<IContractRepository, ContractRepository>();
+builder.Services.AddScoped<IContractService, ContractService>();
+
+
 // Quan trọng: PhotoService cần Cloudinary đã đăng ký ở mục 3
 builder.Services.AddScoped<IPhotoService, PhotoService>();
+
 
 // --- 5. CONFIG CORS ---
 builder.Services.AddCors(options =>

@@ -45,5 +45,38 @@ namespace DAL.Repositories.Implementations
             _context.SupportTickets.Update(ticket);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<SupportTicket>> GetAllWithDetailsAsync()
+        {
+            // Truy vấn: SupportTicket -> VendorProfile -> User (để lấy FullName/Phone)
+            // Đồng thời lấy danh sách ảnh từ TicketImages
+            return await _context.SupportTickets
+                .Include(t => t.TicketImages)
+                .Include(t => t.Vendor)
+                    .ThenInclude(v => v.User)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<bool> UpdateStatusAsync(int id, string status)
+        {
+            var ticket = await _context.SupportTickets.FindAsync(id);
+            if (ticket == null) return false;
+
+            // Gán trạng thái mới
+            ticket.Status = status;
+
+            // Lưu thay đổi xuống SmartMarketDB
+            return await _context.SaveChangesAsync() > 0;
+        }
+        public async Task<SupportTicket> GetByIdAdminAsync(int id)
+        {
+            return await _context.SupportTickets
+                .Include(t => t.TicketImages) // Lấy danh sách ảnh từ bảng ticket_images
+                .Include(t => t.Vendor)       // Kết nối bảng vendor_profiles
+                    .ThenInclude(v => v.User) // Kết nối bảng users để lấy FullName, Phone
+                .FirstOrDefaultAsync(t => t.TicketId == id);
+        }
+
     }
 }
