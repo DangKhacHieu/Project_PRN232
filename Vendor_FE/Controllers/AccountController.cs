@@ -75,10 +75,7 @@ namespace Vendor_FE.Controllers
 
                 if (roleId == 2)
                 {
-                    if (data.VendorId.HasValue)
-                        return RedirectToAction("Profile", "Vendor", new { id = data.VendorId.Value });
-
-                    return RedirectToAction("Profile", "Vendor");
+                    return RedirectToAction("Index", "Home");
                 }
 
                 return RedirectToAction("Index", "Home");

@@ -7,9 +7,11 @@ using System.Threading.Tasks;
 
 namespace BLL.Services.Interfaces
 {
-	public interface IVendorService
-	{
-		Task<List<VendorDTO>> GetAllVendorsAsync();
-		Task DeleteVendorAsync(int vendorId);
-	}
+    public interface IVendorService
+    {
+        Task<List<VendorDTO>> GetAllVendorsAsync();
+        Task<AdminResetPasswordPreviewResultDTO> PreviewAdminResetPasswordAsync(int vendorId);
+        Task ConfirmAdminResetPasswordAsync(int vendorId, string newPassword);
+        Task DeleteVendorAsync(int vendorId);
+    }
 }
