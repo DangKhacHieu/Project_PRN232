@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = null;
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -109,6 +109,21 @@
                 <li class="nav-item mb-1">
                     <a class="nav-link @isActive("Vendors", "Index")" href="@Url.Action("Index", "Vendors")">
                         <span>🧑‍🤝‍🧑</span> <span>Danh sách tiểu thương</span>
+                    </a>
+                </li>
+
+                <!-- Finance links -->
+                <li class="nav-item mb-1 mt-3">
+                    <div class="text-uppercase text-muted" style="font-size: 0.75rem; padding-left: 1rem; margin-bottom: 0.5rem; font-weight: 600;">Tài chính</div>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link @isActive("Finance", "Utilities")" href="@Url.Action("Utilities", "Finance")">
+                        <span>⚡</span> <span>Chỉ số Điện / Nước</span>
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link @isActive("Finance", "Invoices")" href="@Url.Action("Invoices", "Finance")">
+                        <span>🧾</span> <span>Quản lý Hóa Đơn</span>
                     </a>
                 </li>
 

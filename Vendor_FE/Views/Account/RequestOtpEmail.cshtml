@@ -29,10 +29,10 @@
 
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-            <form asp-action="RequestOtpEmail" method="post">
-                @Html.AntiForgeryToken()
+<form asp-action="RequestOtpEmail" method="post">
+    @Html.AntiForgeryToken()
 
-                <div class="mb-3">
+    <div class="mb-3">
                     <label asp-for="Email" class="form-label fw-semibold">Email</label>
                     <input asp-for="Email" class="form-control auth-control" placeholder="Nhập email đã đăng ký" />
                     <span asp-validation-for="Email" class="text-danger small"></span>
@@ -40,12 +40,12 @@
 
                 <div class="d-grid mb-3">
                     <button type="submit" class="btn btn-primary btn-lg auth-btn">Gửi OTP</button>
-                </div>
+    </div>
 
                 <div class="text-center">
                     <a asp-controller="Account" asp-action="Login" class="text-decoration-none small">Quay lại đăng nhập</a>
                 </div>
-            </form>
+</form>
         </div>
     </div>
 
@@ -91,13 +91,13 @@
         .auth-control {
             height: 52px;
             border-radius: 14px;
-        }
+    }
 
         .auth-btn {
             border-radius: 14px;
             font-weight: 600;
             height: 54px;
-        }
+}
     </style>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

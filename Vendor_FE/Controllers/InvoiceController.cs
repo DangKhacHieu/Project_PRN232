@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
@@ -11,6 +14,8 @@ using iText.Kernel.Font;
 using iText.IO.Font;
 using Microsoft.AspNetCore.Hosting;
 using Vendor_FE.DTOs;
+using System.Net.Http.Headers;
+using System;
 
 namespace Vendor_FE.Controllers
 {
@@ -25,10 +30,23 @@ namespace Vendor_FE.Controllers
             _env = env;
         }
 
+        // Hàm tiện ích hỗ trợ gắn Token vào HttpClient (Lấy từ đoạn code 2)
+        private bool AddToken(HttpClient client)
+        {
+            var token = Request.Cookies["VendorAuth"];
+            if (string.IsNullOrEmpty(token)) return false;
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return true;
+        }
+
         public async Task<IActionResult> Index()
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            AddToken(client);
+
+            // Sử dụng hàm AddToken cho gọn
+            if (!AddToken(client)) return RedirectToAction("Login", "Account");
+
             var response = await client.GetAsync("api/Invoices");
             var invoices = new List<InvoiceResponseDTO>();
             if (response.IsSuccessStatusCode)
@@ -43,14 +61,16 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> Details(int id)
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            AddToken(client);
+
+            if (!AddToken(client)) return RedirectToAction("Login", "Account");
+
             var response = await client.GetAsync($"api/Invoices/{id}/details");
             if (!response.IsSuccessStatusCode) return RedirectToAction(nameof(Index));
 
             var jsonStr = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var invoiceDetail = JsonSerializer.Deserialize<InvoiceDetailExportDTO>(jsonStr, options);
-            
+
             if (invoiceDetail == null) return RedirectToAction(nameof(Index));
 
             return View(invoiceDetail);
@@ -60,7 +80,8 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> ExportPdf(int id)
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            AddToken(client);
+
+            if (!AddToken(client)) return RedirectToAction("Login", "Account");
 
             var response = await client.GetAsync($"api/Invoices/{id}/details");
             if (!response.IsSuccessStatusCode)
@@ -68,7 +89,6 @@ namespace Vendor_FE.Controllers
 
             var jsonString = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
             var invoiceDetail = JsonSerializer.Deserialize<InvoiceDetailExportDTO>(jsonString, options);
 
             using (var memoryStream = new MemoryStream())
@@ -101,7 +121,6 @@ namespace Vendor_FE.Controllers
                         .SetTextAlignment(TextAlignment.LEFT)
                 );
 
-                // Draw a simple border line
                 Table lineTable = new Table(1).UseAllAvailableWidth().SetMarginTop(5).SetMarginBottom(15);
                 lineTable.AddCell(new Cell().SetBorderTop(new iText.Layout.Borders.SolidBorder(lightGray, 1f)).SetBorderBottom(iText.Layout.Borders.Border.NO_BORDER).SetBorderLeft(iText.Layout.Borders.Border.NO_BORDER).SetBorderRight(iText.Layout.Borders.Border.NO_BORDER));
                 document.Add(lineTable);
@@ -116,7 +135,7 @@ namespace Vendor_FE.Controllers
 
                 // ===== INFO TABLE =====
                 Table infoTable = new Table(UnitValue.CreatePercentArray(new float[] { 1, 1 })).UseAllAvailableWidth().SetMarginBottom(20);
-                
+
                 Cell cellLeft = new Cell().SetBorder(iText.Layout.Borders.Border.NO_BORDER);
                 cellLeft.Add(new Paragraph($"Mã hóa đơn: HD-{invoiceDetail.InvoiceId:D6}").SetFont(boldFont));
                 cellLeft.Add(new Paragraph($"Khách hàng: {invoiceDetail.BusinessName}"));
@@ -131,8 +150,7 @@ namespace Vendor_FE.Controllers
 
                 // ===== MAIN TABLE =====
                 Table table = new Table(UnitValue.CreatePercentArray(new float[] { 1, 4, 1.5f, 2, 2.5f })).UseAllAvailableWidth();
-                
-                // HEADER TABLE
+
                 table.AddHeaderCell(new Cell().SetBackgroundColor(primaryBlue).SetFontColor(iText.Kernel.Colors.ColorConstants.WHITE).Add(new Paragraph("STT").SetFont(boldFont).SetTextAlignment(TextAlignment.CENTER)));
                 table.AddHeaderCell(new Cell().SetBackgroundColor(primaryBlue).SetFontColor(iText.Kernel.Colors.ColorConstants.WHITE).Add(new Paragraph("Nội dung phí").SetFont(boldFont).SetTextAlignment(TextAlignment.CENTER)));
                 table.AddHeaderCell(new Cell().SetBackgroundColor(primaryBlue).SetFontColor(iText.Kernel.Colors.ColorConstants.WHITE).Add(new Paragraph("Số lượng").SetFont(boldFont).SetTextAlignment(TextAlignment.CENTER)));
@@ -179,32 +197,97 @@ namespace Vendor_FE.Controllers
             }
         }
 
+        // ==================== THÊM CÁC HÀM MOMO TỪ ĐOẠN 1 ====================
         [HttpGet]
-        public async Task<IActionResult> GetPaymentQr(int id)
+        public async Task<IActionResult> PayWithMomo(int id)
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            AddToken(client);
-            var response = await client.GetAsync($"api/Invoices/{id}/generate-qr");
-            if (response.IsSuccessStatusCode)
+
+            if (!AddToken(client)) return RedirectToAction("Login", "Account");
+
+            var response = await client.GetAsync($"api/Invoices/{id}/momo-payment");
+            var jsonStr = await response.Content.ReadAsStringAsync();
+
+            // 1. Kiểm tra nếu gọi API thất bại (ví dụ: lỗi 500, 404, 400)
+            if (!response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var data = JsonSerializer.Deserialize<Dictionary<string, string>>(content, options);
-                if (data != null && data.ContainsKey("qrUrl"))
-                {
-                    return Json(new { qrUrl = data["qrUrl"] });
-                }
+                // Hiển thị thẳng nguyên nhân từ BE ra màn hình để dễ sửa
+                TempData["Error"] = $"Lỗi từ BE: {response.StatusCode} - {jsonStr}";
+                return RedirectToAction(nameof(Index));
             }
-            return BadRequest();
+
+            try
+            {
+                // 2. Trường hợp BE trả về thẳng 1 chuỗi URL (Ví dụ: "https://momo.vn/...")
+                string cleanStr = jsonStr.Trim('"', ' ');
+                if (cleanStr.StartsWith("http"))
+                {
+                    return Redirect(cleanStr);
+                }
+
+                // 3. Trường hợp BE trả về đối tượng JSON
+                using (JsonDocument doc = JsonDocument.Parse(jsonStr))
+                {
+                    JsonElement root = doc.RootElement;
+                    string momoUrl = string.Empty;
+
+                    // Dò tìm các key thường chứa link thanh toán (ưu tiên payUrl của MoMo)
+                    if (root.TryGetProperty("payUrl", out JsonElement payUrlElement))
+                        momoUrl = payUrlElement.GetString();
+                    else if (root.TryGetProperty("url", out JsonElement urlElement))
+                        momoUrl = urlElement.GetString();
+                    else if (root.TryGetProperty("Url", out JsonElement capUrlElement))
+                        momoUrl = capUrlElement.GetString();
+
+                    // Nếu lấy được link thì chuyển hướng
+                    if (!string.IsNullOrEmpty(momoUrl))
+                        return Redirect(momoUrl);
+                }
+
+                // 4. Nếu đọc được JSON nhưng không tìm thấy key "payUrl" hay "url"
+                TempData["Error"] = $"Không tìm thấy đường link. Dữ liệu BE trả về là: {jsonStr}";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (JsonException)
+            {
+                // 5. Nếu dữ liệu trả về bị lỗi cấu trúc
+                TempData["Error"] = $"Lỗi đọc dữ liệu: {jsonStr}";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
-        private void AddToken(HttpClient client)
+        [HttpGet]
+        public async Task<IActionResult> MomoReturn(
+            int resultCode,
+            string? extraData,
+            string? orderId,
+            string? message,
+            long transId,
+            long amount)
         {
-            var token = Request.Cookies["VendorAuth"];
-            if (!string.IsNullOrEmpty(token))
+            if (resultCode == 0 && int.TryParse(extraData, out int invoiceId))
             {
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                var client = _httpClientFactory.CreateClient("BackendAPI");
+                AddToken(client); // Gắn token vào client nếu có
+
+                var payload = new
+                {
+                    paymentMethod = "MOMO",
+                    paidAmount = (decimal)amount,
+                    transactionCode = orderId,
+                    momoTransactionId = transId.ToString()
+                };
+
+                var response = await client.PostAsJsonAsync($"api/Invoices/{invoiceId}/pay", payload);
+                TempData[response.IsSuccessStatusCode ? "Success" : "Error"] = response.IsSuccessStatusCode
+                    ? "Thanh toán MoMo thành công! Vui lòng chờ nhân viên xác nhận."
+                    : "Thanh toán thành công nhưng cập nhật trạng thái thất bại. Vui lòng liên hệ quản lý.";
             }
+            else
+            {
+                TempData["Error"] = $"Thanh toán MoMo thất bại: {message ?? "Giao dịch bị huỷ."}";
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

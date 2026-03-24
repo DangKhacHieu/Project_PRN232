@@ -13,7 +13,7 @@ namespace API_BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Vendor")]
+     [Authorize]
     public class InvoicesController : ControllerBase
     {
         private readonly IInvoiceService _invoiceService;
@@ -25,6 +25,7 @@ namespace API_BE.Controllers
 
         // 1. LẤY DANH SÁCH HÓA ĐƠN
         [HttpGet]
+        [Authorize(Roles = "Vendor")]
         public async Task<IActionResult> GetMyInvoices()
         {
             int vendorId = GetVendorIdFromToken();
@@ -34,6 +35,7 @@ namespace API_BE.Controllers
 
         // 2. LẤY MÃ QR THANH TOÁN
         [HttpGet("{id}/generate-qr")]
+        [Authorize(Roles = "Vendor")]
         public async Task<IActionResult> GeneratePaymentQR(int id)
         {
             int vendorId = GetVendorIdFromToken();
@@ -47,6 +49,7 @@ namespace API_BE.Controllers
 
         // 3. LẤY HÓA ĐƠN THANH TOÁN
         [HttpGet("{id}/details")]
+        [Authorize(Roles = "Vendor")]
         public async Task<IActionResult> GetInvoiceDetails(int id)
         {
             int vendorId = GetVendorIdFromToken();
@@ -59,6 +62,7 @@ namespace API_BE.Controllers
         }
 
         [HttpGet("{id}/export-pdf")]
+        [Authorize(Roles = "Vendor")]
         public async Task<IActionResult> ExportPdf(int id)
         {
             int vendorId = GetVendorIdFromToken();
@@ -72,8 +76,107 @@ namespace API_BE.Controllers
 
         private int GetVendorIdFromToken()
         {
-            var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
+            var claim = User.Claims.FirstOrDefault(c => c.Type == "vendor_id" || c.Type == "Vendor_id" || c.Type == "VendorId");
             return claim != null ? int.Parse(claim.Value) : 0;
+        }
+
+        // --- ADMIN / FINANCE ENDPOINTS ---
+        
+        [HttpGet("all")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllInvoices()
+        {
+            try
+            {
+                var invoices = await _invoiceService.GetAllInvoicesAsync();
+                return Ok(invoices);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("all/{id}/details")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAdminInvoiceDetails(int id)
+        {
+            try
+            {
+                // Truyền vendorId = 0 để bypass kiểm tra quyền sở hữu Vendor
+                var detail = await _invoiceService.GetInvoiceDetailAsync(0, id);
+                if (detail == null) return NotFound(new { Message = "Invoice not found." });
+                return Ok(detail);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("active-contracts")]
+        [AllowAnonymous]
+        // [Authorize(Roles = "Admin,Finance")]
+        public async Task<IActionResult> GetActiveContracts()
+        {
+            try
+            {
+                var contracts = await _invoiceService.GetActiveContractsAsync();
+                return Ok(contracts);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("calculate")]
+        [AllowAnonymous]
+        // [Authorize(Roles = "Admin,Finance")]
+        public async Task<IActionResult> CalculateInvoice([FromBody] BLL.DTOs.CalculateInvoiceRequestDTO dto)
+        {
+            try
+            {
+                var invoice = await _invoiceService.CalculateAndGenerateInvoiceAsync(dto);
+                return Ok(invoice);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/pay")]
+        [AllowAnonymous]
+        // [Authorize(Roles = "Admin,Finance")]
+        public async Task<IActionResult> ClearDebt(int id, [FromBody] BLL.DTOs.PaymentConfirmationDTO payment)
+        {
+            try
+            {
+                bool result = await _invoiceService.ClearDebtAsync(id, payment);
+                if (result) return Ok(new { Message = "Đã gạch nợ thành công." });
+                return BadRequest(new { Message = "Gạch nợ thất bại. Hóa đơn không tồn tại hoặc đã thanh toán." });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id}/momo-payment")]
+        [Authorize(Roles = "Vendor")]
+        public async Task<IActionResult> GetMomoPaymentUrl(int id, [FromServices] Microsoft.Extensions.Configuration.IConfiguration config)
+        {
+            int vendorId = GetVendorIdFromToken();
+            var invoice = await _invoiceService.GetInvoiceDetailAsync(vendorId, id);
+            if (invoice == null || invoice.Status == "PAID") return BadRequest("Invoice not found or already paid.");
+
+            var momoConfig = config.GetSection("MomoPaymentConfig").Get<BLL.DTOs.MomoPaymentConfig>();
+            if (momoConfig == null) return StatusCode(500, "Momo configuration is missing.");
+
+            var url = await _invoiceService.GenerateMomoPaymentUrlAsync(id, invoice.TotalAmount, momoConfig);
+            if (url == null) return BadRequest("Could not generate Momo URL.");
+            return Ok(new { Url = url });
         }
     }
 }

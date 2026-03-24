@@ -13,29 +13,22 @@ using API_BE.Helpers;   // Thêm cái này để lấy CloudinarySettings
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CRITICAL: Disable ASP.NET Core's default JWT claim name remapping.
+// Without this, claim names like "VendorId" and "role" get transformed into
+// long Microsoft URI strings, making User.Claims.FirstOrDefault(c => c.Type == "VendorId") always return null.
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+
 // --- 1. CONFIG CONTROLLERS & JSON ---
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 builder.Services.AddDistributedMemoryCache();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowVendorFE",
-        policy =>
-        {
-            policy.WithOrigins("https://localhost:7280", "http://localhost:5091")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
-});
 
-
+// --- 2. CONFIG DATABASE ---
 var connectionString = builder.Configuration.GetConnectionString("AppDbContext");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -69,6 +62,13 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 
+// Finance/Admin Dependencies
+builder.Services.AddScoped<IUtilityReadingRepository, UtilityReadingRepository>();
+builder.Services.AddScoped<IUtilityReadingService, UtilityReadingService>();
+builder.Services.AddScoped<IFeeConfigRepository, FeeConfigRepository>();
+builder.Services.AddScoped<IStallContractRepository, StallContractRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+
 // Quan trọng: PhotoService cần Cloudinary đã đăng ký ở mục 3
 builder.Services.AddScoped<IPhotoService, PhotoService>();
 
@@ -89,14 +89,6 @@ var key = jwtSection.GetValue<string>("Key") ?? string.Empty;
 var issuer = jwtSection.GetValue<string>("Issuer") ?? string.Empty;
 var audience = jwtSection.GetValue<string>("Audience") ?? string.Empty;
 var keyBytes = Encoding.UTF8.GetBytes(key);
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
-builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
-builder.Services.AddScoped<IVendorProfileRepository, VendorProfileRepository>();
-builder.Services.AddScoped<IVendorProfileService, VendorProfileService>();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -116,7 +108,8 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = !string.IsNullOrEmpty(audience),
         ValidAudience = audience,
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero // Loại bỏ thời gian trễ mặc định của token
+        ClockSkew = TimeSpan.Zero, // Loại bỏ thời gian trễ mặc định của token
+        RoleClaimType = "role"
     };
 });
 

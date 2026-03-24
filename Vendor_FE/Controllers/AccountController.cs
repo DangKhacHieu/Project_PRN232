@@ -126,7 +126,8 @@ namespace Vendor_FE.Controllers
                     var media = response.Content.Headers.ContentType?.MediaType;
                     if (string.Equals(media, "application/json", StringComparison.OrdinalIgnoreCase))
                     {
-                        var err = await response.Content.ReadFromJsonAsync<ErrorDto>();
+                var err = await response.Content.ReadFromJsonAsync<ErrorDto>();
+                model.Error = err?.message ?? "Registration failed.";
                         if (!string.IsNullOrWhiteSpace(err?.message))
                             errorMessage = err.message!;
                         else

@@ -12,14 +12,15 @@
             <div class="card-body p-4 position-relative">
                 <div class="profile-avatar">
                     @if (!string.IsNullOrWhiteSpace(Model?.BusinessName))
-                    {
+    {
                         @Model.BusinessName.Substring(0, 1).ToUpper()
                     }
                     else
-                    {
+            {
                         <i class="fa-solid fa-store"></i>
-                    }
-                </div>
+            }
+        </div>
+    }
 
                 <div class="d-flex align-items-start gap-4 flex-wrap">
                     <div class="profile-info">
@@ -32,8 +33,13 @@
                             <p class="text-muted mb-0 desc-body">
                                 @(string.IsNullOrWhiteSpace(Model?.Description) ? "Chưa có mô tả." : Model.Description)
                             </p>
-                        </div>
-                    </div>  
+            </div>
+        }
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div style="width:96px; height:96px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:28px;">
+                    @(string.IsNullOrWhiteSpace(Model.FullName) ? "?" : Model.FullName?.Split(' ').Last())
+                </div>
 
                     <div class="profile-actions ms-auto d-flex flex-column gap-2">
                         <a href="/Vendor/Edit/@Model?.VendorId" class="btn btn-outline-primary rounded-pill px-4">Chỉnh sửa hồ sơ</a>
@@ -41,10 +47,14 @@
                         <a href="/Products/Index" class="btn btn-primary rounded-pill px-4">Quản lý sản phẩm</a>
                     </div>
                 </div>
+                    </div>
+                </div>
+                <div class="ms-auto">
+                    <a asp-controller="Vendor" asp-action="Edit" asp-route-id="@Model.VendorId" class="btn btn-outline-primary me-2">Edit Profile</a>
+                    <a asp-controller="Account" asp-action="RequestOtpEmail" class="btn btn-outline-secondary me-2">Change Password</a>
+                    <a asp-controller="Vendor" asp-action="Products" asp-route-vendorId="@Model.VendorId" class="btn btn-primary">Manage Products</a>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
 
 <style>
     .profile-card {

@@ -77,7 +77,7 @@ namespace BLL.Services.Implementations
                 VendorId = user.VendorProfile?.VendorId,
                 FullName = user.FullName,
                 Role = user.Role?.RoleName,
-                RoleId = user.RoleId 
+                RoleId = user.RoleId
             };
         }
 

@@ -8,7 +8,7 @@ namespace API_BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = "Vendor")]
+    [Authorize(Roles = "Vendor")]
     public class SupportTicketsController : ControllerBase
     {
         private readonly ISupportTicketService _ticketService;
@@ -44,7 +44,7 @@ namespace API_BE.Controllers
 
         private int GetVendorIdFromToken()
         {
-            var claim = User.Claims.FirstOrDefault(c => c.Type == "VendorId");
+            var claim = User.Claims.FirstOrDefault(c => c.Type.Equals("VendorId", StringComparison.OrdinalIgnoreCase) || c.Type.Equals("vendor_id", StringComparison.OrdinalIgnoreCase));
             return claim != null ? int.Parse(claim.Value) : 0;
         }
 

@@ -45,7 +45,7 @@ namespace Vendor_FE.Controllers
             {
                 var streamContent = new StreamContent(NewCoverImage.OpenReadStream());
                 streamContent.Headers.Add("Content-Type", NewCoverImage.ContentType);
-                content.Add(streamContent, "NewCoverImage", NewCoverImage.FileName);
+                content.Add(streamContent, "Avatar", NewCoverImage.FileName);
             }
 
             var response = await client.PutAsync("api/VendorProfiles/description", content);

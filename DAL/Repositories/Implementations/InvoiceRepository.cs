@@ -1,4 +1,4 @@
-﻿using DAL.Data;
+using DAL.Data;
 using DAL.Entities;
 using DAL.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +27,14 @@ namespace DAL.Repositories.Implementations
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Invoice>> GetAllInvoicesAsync()
+        {
+            return await _context.Invoices
+                .Include(i => i.Contract)
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
+        }
+
         public async Task<Invoice?> GetInvoiceByIdAndVendorIdAsync(int invoiceId, int vendorId)
         {
             // Kiểm tra bảo mật: Hóa đơn này phải thuộc về hợp đồng của đúng Vendor đang đăng nhập
@@ -51,7 +59,7 @@ namespace DAL.Repositories.Implementations
                 .Include(i => i.InvoiceItems)
                     .ThenInclude(it => it.FeeConfig) // Lấy Cấu hình phí
                     .ThenInclude(it => it.FeeType)   // Lấy Tên loại phí
-                .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId && i.Contract != null && i.Contract.VendorId == vendorId);
+                .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId && (vendorId == 0 || (i.Contract != null && i.Contract.VendorId == vendorId)));
         }
     }
 }
