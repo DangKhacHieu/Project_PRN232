@@ -277,29 +277,41 @@ namespace BLL.Services.Implementations
             {
                 string orderId = Guid.NewGuid().ToString();
                 string requestId = Guid.NewGuid().ToString();
-                string extraData = invoiceId.ToString();
-                string rawSignature = $"accessKey={config.AccessKey}&amount={amount}&extraData={extraData}&ipnUrl={config.CallbackUrl}&orderId={orderId}&orderInfo=Thanh toan HD {invoiceId}&partnerCode={config.PartnerCode}&redirectUrl={config.ReturnUrl}&requestId={requestId}&requestType=captureWallet";
+                string extraData = "";  // MoMo recommends empty or base64 string - using empty for simplicity
+                long amountLong = (long)amount;  // MoMo requires integer amount
+                string orderInfo = $"Thanh toan HD {invoiceId}";
+
+                // Signature must be built with EXACT same values passed in request body (no URL encoding)
+                string rawSignature = $"accessKey={config.AccessKey}&amount={amountLong}&extraData={extraData}&ipnUrl={config.CallbackUrl}&orderId={orderId}&orderInfo={orderInfo}&partnerCode={config.PartnerCode}&redirectUrl={config.ReturnUrl}&requestId={requestId}&requestType=payWithMethod";
                 string signature = ComputeHmacSha256(rawSignature, config.SecretKey);
 
                 var requestData = new
                 {
                     partnerCode = config.PartnerCode,
+                    partnerName = "Smart Market",
+                    storeId = config.PartnerCode,
                     requestId,
-                    amount,
+                    amount = amountLong,
                     orderId,
-                    orderInfo = $"Thanh toan HD {invoiceId}",
+                    orderInfo,
                     redirectUrl = config.ReturnUrl,
                     ipnUrl = config.CallbackUrl,
-                    requestType = "captureWallet",
+                    lang = "vi",
+                    requestType = "payWithMethod",
+                    autoCapture = true,
                     extraData,
                     signature
                 };
 
                 using var client = new System.Net.Http.HttpClient();
-                var response = await client.PostAsJsonAsync(config.MomoApiUrl, requestData);
+                var jsonBody = System.Text.Json.JsonSerializer.Serialize(requestData);
+                var content = new System.Net.Http.StringContent(jsonBody, Encoding.UTF8, "application/json");
+                var response = await client.PostAsync(config.MomoApiUrl, content);
+
+                var resStr = await response.Content.ReadAsStringAsync();
                 if (response.IsSuccessStatusCode)
                 {
-                    var res = await response.Content.ReadFromJsonAsync<System.Text.Json.Nodes.JsonObject>();
+                    var res = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.Nodes.JsonObject>(resStr);
                     return res?["payUrl"]?.ToString();
                 }
                 return null;
