@@ -14,5 +14,9 @@ namespace BLL.Models
         public string? Description { get; set; }
         public string? CoverImageUrl { get; set; }
         public string? FullName { get; set; }
+
+        // Added so API returns contact info to frontend
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
     }
 }

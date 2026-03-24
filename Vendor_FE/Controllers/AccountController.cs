@@ -119,8 +119,34 @@ namespace Vendor_FE.Controllers
                     return RedirectToAction("Login");
                 }
 
-                var err = await response.Content.ReadFromJsonAsync<ErrorDto>();
-                model.Error = err?.message ?? "Registration failed.";
+                // Robustly read error content: try JSON then fallback to plain text
+                string errorMessage = "Registration failed.";
+                try
+                {
+                    var media = response.Content.Headers.ContentType?.MediaType;
+                    if (string.Equals(media, "application/json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var err = await response.Content.ReadFromJsonAsync<ErrorDto>();
+                        if (!string.IsNullOrWhiteSpace(err?.message))
+                            errorMessage = err.message!;
+                        else
+                            errorMessage = await response.Content.ReadAsStringAsync();
+                    }
+                    else
+                    {
+                        var text = await response.Content.ReadAsStringAsync();
+                        if (!string.IsNullOrWhiteSpace(text))
+                            errorMessage = text;
+                    }
+                }
+                catch
+                {
+                    var text = await response.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrWhiteSpace(text))
+                        errorMessage = text;
+                }
+
+                model.Error = errorMessage;
                 return View(model);
             }
             catch (Exception ex)

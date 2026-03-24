@@ -37,7 +37,10 @@ namespace API_BE.Controllers
                 BusinessName = vp.BusinessName,
                 Description = vp.Description,
                 CoverImageUrl = vp.CoverImageUrl,
-                FullName = vp.User?.FullName
+                FullName = vp.User?.FullName,
+                // populate contact fields from related User
+                Email = vp.User?.Email,
+                Phone = vp.User?.Phone
             };
 
             return Ok(dto);
