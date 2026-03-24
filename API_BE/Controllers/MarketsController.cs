@@ -23,7 +23,7 @@ namespace API_BE.Controllers
 			try
 			{
 				if (request == null || !request.Zones.Any())
-					return BadRequest("Dữ liệu đầu vào không hợp lệ hoặc thiếu thông tin Khu.");
+					return BadRequest(new { message = "Dữ liệu đầu vào không hợp lệ hoặc thiếu thông tin Khu." });
 
 				var result = await _marketService.GenerateAndSaveMarketAsync(request);
 
@@ -43,7 +43,7 @@ namespace API_BE.Controllers
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, $"Lỗi server: {ex.Message}");
+				return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
 			}
 		}
 
@@ -54,14 +54,14 @@ namespace API_BE.Controllers
 			try
 			{
 				if (request == null || !request.Any())
-					return BadRequest("Không có dữ liệu vị trí cần cập nhật.");
+					return BadRequest(new { message = "Không có dữ liệu vị trí cần cập nhật." });
 
 				await _marketService.UpdateStallPositionsAsync(request);
 				return Ok(new { Message = "Lưu vị trí mới thành công!" });
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, $"Lỗi server: {ex.Message}");
+				return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
 			}
 		}
 
@@ -69,7 +69,7 @@ namespace API_BE.Controllers
 		public async Task<IActionResult> GetMarketLayout(int id)
 		{
 			var market = await _marketService.GetMarketLayoutAsync(id);
-			if (market == null) return NotFound("Không tìm thấy chợ.");
+			if (market == null) return NotFound(new { message = "Không tìm thấy chợ." });
 			return Ok(market);
 		}
 
@@ -88,7 +88,7 @@ namespace API_BE.Controllers
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, $"Lỗi server: {ex.Message}");
+				return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
 			}
 		}
 
@@ -103,7 +103,7 @@ namespace API_BE.Controllers
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(ex.Message);
+				return BadRequest(new { message = ex.Message });
 			}
 		}
 
@@ -118,7 +118,7 @@ namespace API_BE.Controllers
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, $"Lỗi server: {ex.Message}");
+				return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
 			}
 		}
 
@@ -138,7 +138,7 @@ namespace API_BE.Controllers
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, $"Lỗi server: {ex.Message}");
+				return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
 			}
 		}
 
@@ -149,14 +149,14 @@ namespace API_BE.Controllers
 			try
 			{
 				if (request == null || !request.Any())
-					return BadRequest("Không có dữ liệu Khu cần cập nhật.");
+					return BadRequest(new { message = "Không có dữ liệu Khu cần cập nhật." });
 
 				await _marketService.UpdateZonePositionsAsync(request);
 				return Ok(new { Message = "Lưu thay đổi Khu thành công!" });
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, $"Lỗi server: {ex.Message}");
+				return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
 			}
 		}
 
@@ -165,7 +165,7 @@ namespace API_BE.Controllers
 		{
 			try
 			{
-				if (request == null) return BadRequest("Dữ liệu rỗng.");
+				if (request == null) return BadRequest(new { message = "Dữ liệu rỗng." });
 				if (marketId != request.MarketId) request.MarketId = marketId;
 
 				var created = await _marketService.AddZoneWithStallsAsync(request);
@@ -173,7 +173,7 @@ namespace API_BE.Controllers
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, $"Lỗi server: {ex.Message}");
+				return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
 			}
 		}
 
@@ -187,7 +187,7 @@ namespace API_BE.Controllers
 			}
 			catch (KeyNotFoundException)
 			{
-				return NotFound("Không tìm thấy khu.");
+				return NotFound(new { message = "Không tìm thấy khu." });
 			}
 			catch (InvalidOperationException ex)
 			{
@@ -195,8 +195,9 @@ namespace API_BE.Controllers
 			}
 			catch (Exception ex)
 			{
-				return StatusCode(500, $"Lỗi server: {ex.Message}");
+				return StatusCode(500, new { message = $"Lỗi server: {ex.Message}" });
 			}
 		}
 	}
 }
+	

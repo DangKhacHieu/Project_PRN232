@@ -29,6 +29,13 @@ namespace BLL.Services.Implementations
 				throw new ArgumentException($"Tên chợ '{request.MarketName}' đã tồn tại trong hệ thống. Vui lòng đặt tên khác!");
 			}
 
+			// 2. Kiểm tra các khu truyền lên có bị trùng tên nhau không
+			var zoneNames = request.Zones.Select(z => z.ZoneName.Trim()).ToList();
+			if (zoneNames.Count != zoneNames.Distinct(StringComparer.OrdinalIgnoreCase).Count())
+			{
+				throw new ArgumentException("Trong cùng một chợ, các khu không được trùng tên với nhau!");
+			}
+
 			// TẠO MÃ VIẾT TẮT CHO CHỢ (Ví dụ: "Chợ Cần Thơ" -> "CCT")
 			// Thuật toán: Cắt các từ theo khoảng trắng, lấy chữ cái đầu tiên rồi viết hoa toàn bộ
 			string marketAbbreviation = string.Join("", request.MarketName
@@ -44,6 +51,8 @@ namespace BLL.Services.Implementations
 			};
 
 			double currentZoneStartY = 0;
+
+			var prefixCounters = new Dictionary<string, int>();
 
 			foreach (var config in request.Zones)
 			{
@@ -63,6 +72,9 @@ namespace BLL.Services.Implementations
 					Stalls = new List<Stall>()
 				};
 
+				if (!prefixCounters.ContainsKey(config.ZonePrefix))
+					prefixCounters[config.ZonePrefix] = 1;
+
 				for (int i = 0; i < config.NumberOfStalls; i++)
 				{
 					int col = i % config.Columns;
@@ -71,10 +83,11 @@ namespace BLL.Services.Implementations
 					double stallX = zone.MinX.Value + config.StallGap + col * (config.StallWidth + config.StallGap);
 					double stallY = zone.MinY.Value + config.StallGap + row * (config.StallHeight + config.StallGap);
 
+					int currentSeq = prefixCounters[config.ZonePrefix]++;
 					var stall = new Stall
 					{
-						// KẾT QUẢ ĐẦU RA CỰC KỲ CHUYÊN NGHIỆP: "CCT-TP-01"
-						StallCode = $"{marketAbbreviation}-{config.ZonePrefix}-{i + 1:D2}",
+						// KẾT QUẢ ĐẦU RA CỰC KỲ CHUYÊN NGHIỆP: "CCT1-TP-01"
+						StallCode = $"{marketAbbreviation}{{MARKET_ID}}-{config.ZonePrefix}-{currentSeq:D2}",
 
 						AreaM2 = (decimal)(config.StallWidth * config.StallHeight),
 						AllowedBusinessType = config.AllowedBusinessType,
@@ -123,6 +136,7 @@ namespace BLL.Services.Implementations
 				StallCode = request.StallCode,
 				Width = request.Width,
 				Height = request.Height,
+				AreaM2 = (decimal)(request.Width * request.Height),
 				PosX = request.PosX, // Tọa độ do user click chọn trên màn hình
 				PosY = request.PosY,
 				Status = "VACANT",
@@ -137,27 +151,27 @@ namespace BLL.Services.Implementations
 		}
 
 		// BỔ SUNG: HÀM CẬP NHẬT THÔNG TIN SẠP
-        public async Task UpdateStallInfoAsync(int stallId, UpdateStallInfoDTO request)
-        {
-            var stall = await _marketRepo.GetStallByIdAsync(stallId);
-            if (stall == null) throw new Exception("Không tìm thấy sạp này trong hệ thống!");
+		public async Task UpdateStallInfoAsync(int stallId, UpdateStallInfoDTO request)
+		{
+			var stall = await _marketRepo.GetStallByIdAsync(stallId);
+			if (stall == null) throw new Exception("Không tìm thấy sạp này trong hệ thống!");
 
-            stall.StallCode = request.StallCode;
-            stall.Width = request.Width;
-            stall.Height = request.Height;
-            stall.AreaM2 = (decimal)(request.Width * request.Height);
-            stall.AllowedBusinessType = request.AllowedBusinessType;
-            stall.Status = request.Status;
+			stall.StallCode = request.StallCode;
+			stall.Width = request.Width;
+			stall.Height = request.Height;
+			stall.AreaM2 = (decimal)(request.Width * request.Height);
+			stall.AllowedBusinessType = request.AllowedBusinessType;
+			stall.Status = request.Status;
 
-            await _marketRepo.UpdateStallAsync(stall);
-        }
+			await _marketRepo.UpdateStallAsync(stall);
+		}
 
 		public async Task<List<Market>> GetAllMarketsAsync()
 		{
 			return await _marketRepo.GetAllMarketsAsync();
 		}
 
-        public async Task UpdateZonePositionsAsync(List<UpdateZonePositionDTO> request)
+		public async Task UpdateZonePositionsAsync(List<UpdateZonePositionDTO> request)
 		{
 			if (request == null || !request.Any()) return;
 
@@ -191,6 +205,35 @@ namespace BLL.Services.Implementations
 				Stalls = new List<Stall>()
 			};
 
+			var market = await _marketRepo.GetMarketWithDetailsAsync(request.MarketId);
+
+			if (market != null && market.Zones.Any(z => z.ZoneName.Trim().Equals(request.ZoneName.Trim(), StringComparison.OrdinalIgnoreCase)))
+			{
+				throw new ArgumentException($"Khu vực mang tên '{request.ZoneName}' đã tồn tại trong chợ này!");
+			}
+
+			string marketAbbreviation = market != null ? string.Join("", market.MarketName
+				.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+				.Select(word => word[0])).ToUpper() : "CH";
+
+			var existingCodes = market?.Zones?.SelectMany(z => z.Stalls)?.Select(s => s.StallCode)?.ToHashSet() ?? new HashSet<string>();
+			int startSeq = 1;
+			while (true)
+			{
+				bool conflict = false;
+				for (int i = 0; i < request.NumberOfStalls; i++)
+				{
+					string candidate = $"{marketAbbreviation}{request.MarketId}-{request.StallPrefix}-{(startSeq + i):D2}";
+					if (existingCodes.Contains(candidate))
+					{
+						conflict = true;
+						break;
+					}
+				}
+				if (!conflict) break;
+				startSeq++;
+			}
+
 			// simple grid layout: compute columns that fit by width (use integer columns)
 			int columns = Math.Max(1, (int)Math.Floor((request.Width + request.StallGap) / (request.StallWidth + request.StallGap)));
 			for (int i = 0; i < request.NumberOfStalls; i++)
@@ -203,9 +246,10 @@ namespace BLL.Services.Implementations
 
 				var stall = new Stall
 				{
-					StallCode = $"{request.StallPrefix}-{(i + 1):D2}",
+					StallCode = $"{marketAbbreviation}{request.MarketId}-{request.StallPrefix}-{(startSeq + i):D2}",
 					Width = request.StallWidth,
 					Height = request.StallHeight,
+					AreaM2 = (decimal)(request.StallWidth * request.StallHeight),
 					PosX = stallX,
 					PosY = stallY,
 					Status = "VACANT",
@@ -225,10 +269,10 @@ namespace BLL.Services.Implementations
 			await _marketRepo.DeleteZoneAsync(zoneId, force);
 		}
 
-        public async Task<Stall?> GetStallDetailsAsync(int stallId)
-        {
-            return await _marketRepo.GetStallByIdAsync(stallId);
-        }
+		public async Task<Stall?> GetStallDetailsAsync(int stallId)
+		{
+			return await _marketRepo.GetStallByIdAsync(stallId);
+		}
 
 		public async Task<List<int>> SearchStallIdsAsync(int marketId, string? keyword, string? status)
 		{

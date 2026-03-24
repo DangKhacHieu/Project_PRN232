@@ -339,14 +339,20 @@
             changedZones[id] = { ...changedZones[id], zoneId: isNaN(parseInt(id)) ? id : parseInt(id), minX: x / SCALE, minY: y / SCALE, width: w / SCALE, height: h / SCALE };
         }
 
+        function getMarketAbbrev() {
+            if (!currentMarketData || !currentMarketData.marketName) return "CH";
+            return currentMarketData.marketName.toUpperCase().trim().split(/\s+/).map(w => w[0] || '').join('');
+        }
+
         function generateAutoStallCode(zoneId, zoneName) {
             const existingCount = $(`.stall-of-zone-${zoneId}`).length;
             const nextNum = existingCount + 1;
-            let cleanName = zoneName.toUpperCase().replace("KHU", "").trim();
-            let prefix = cleanName.split(' ').map(word => word.charAt(0)).join('');
+            let cleanName = zoneName.toUpperCase().replace(/\bKHU\b/g, "").trim();
+            let prefix = cleanName.split(/\s+/).map(word => word.charAt(0) || '').join('');
             if (!prefix) prefix = "S";
             let numStr = nextNum < 10 ? "0" + nextNum : nextNum;
-            return `${prefix}-${numStr}`;
+            let mAbbrev = getMarketAbbrev();
+            return `${mAbbrev}${currentId}-${prefix}-${numStr}`;
         }
 
         function openEditStallModal(stallElement) {
@@ -365,26 +371,30 @@
 
             fetchDetails.done(function(stallDetails) {
                 let ownerName = '';
-                if (stallDetails && stallDetails.stallContracts && stallDetails.stallContracts.length) {
-                    const active = stallDetails.stallContracts.find(c => (c.status || '').toUpperCase() === 'ACTIVE');
-                    if (active && active.vendor) ownerName = active.vendor.businessName || '';
+                let currentStatus = 'VACANT';
+                if (stallDetails) {
+                    if (stallDetails.status) currentStatus = stallDetails.status;
+                    if (stallDetails.stallContracts && stallDetails.stallContracts.length) {
+                        const active = stallDetails.stallContracts.find(c => (c.status || '').toUpperCase() === 'ACTIVE');
+                        if (active && active.vendor) ownerName = active.vendor.businessName || '';
+                    }
                 }
 
                 Swal.fire({
                     title: 'Chỉnh sửa Sạp',
                     html: `
-                        <label class="d-block text-start mb-1 mt-2 fw-bold">Mã sạp:</label>
-                        <input id="sw-code" class="form-control mb-2" value="${stallElement.text().trim()}">
+                        <label class="d-block text-start mb-1 mt-2 fw-bold">Mã sạp (Tên sạp):</label>
+                        <input id="sw-code" class="form-control mb-2" value="${stallElement.text().trim()}" disabled>
 
                         <label class="d-block text-start mb-1 fw-bold">Trạng thái:</label>
-                        <select id="sw-status" class="form-select mb-2">
-                            <option value="VACANT">Còn trống (Xanh lá)</option>
-                            <option value="RENTED">Đã cho thuê (Đỏ)</option>
-                            <option value="MAINTENANCE">Đang bảo trì (Vàng)</option>
+                        <select id="sw-status" class="form-select mb-2" disabled>
+                            <option value="VACANT" ${currentStatus === 'VACANT' ? 'selected' : ''}>Còn trống (Xanh lá)</option>
+                            <option value="RENTED" ${currentStatus === 'RENTED' ? 'selected' : ''}>Đã cho thuê (Đỏ)</option>
+                            <option value="MAINTENANCE" ${currentStatus === 'MAINTENANCE' ? 'selected' : ''}>Đang bảo trì (Vàng)</option>
                         </select>
 
                         <label class="d-block text-start mb-1 fw-bold">Chủ sạp (tên):</label>
-                        <input id="sw-owner" class="form-control mb-2" value="${ownerName}">
+                        <input id="sw-owner" class="form-control mb-2" value="${ownerName}" readonly disabled>
 
                         <label class="d-block text-start mb-1 fw-bold">Rộng (m):</label>
                         <input id="sw-width" type="number" step="0.01" class="form-control mb-2" value="${widthM}">
@@ -500,7 +510,7 @@
                         success: function() {
                             Swal.close(); Swal.fire('Thành công', 'Đã thêm sạp mới!', 'success'); loadEditMap(currentId);
                         },
-                        error: function(xhr) { Swal.fire('Lỗi API', xhr.responseText || 'Lỗi khi lưu sạp!', 'error'); }
+                        error: function(xhr) { Swal.fire('Lỗi API', xhr.responseJSON?.message || xhr.responseText || 'Lỗi khi lưu sạp!', 'error'); }
                     });
                 }
             });
@@ -559,10 +569,11 @@
                 `);
                 container.append(zoneDiv);
 
+                let mAbbrev = getMarketAbbrev();
                 let curX = zXpx + 5; let curY = zYpx + 5;
                 for (let i = 1; i <= count; i++) {
                     const tempStallId = `new-${Date.now()}-${i}`;
-                    const sCode = `${prefix}-${String(i).padStart(2, '0')}`;
+                    const sCode = `${mAbbrev}${currentId}-${prefix}-${String(i).padStart(2, '0')}`;
                     const stallDiv = $(`
                         <div class="stall-edit draggable-stall stall-of-zone-${tempZoneId}"
                              data-id="${tempStallId}" data-zone-id="${tempZoneId}"
@@ -631,7 +642,7 @@
                 await loadEditMap(currentId);
                 Swal.close(); Swal.fire('Thành công', 'Đã lưu thay đổi vào hệ thống!', 'success');
             } catch (err) {
-                console.error('Save error', err); Swal.fire('Lỗi', (err.responseText || err.statusText || 'Lưu không thành công'), 'error');
+                console.error('Save error', err); Swal.fire('Lỗi', (err.responseJSON?.message || err.responseText || err.statusText || 'Lưu không thành công'), 'error');
             } finally { $btn.prop('disabled', false); }
         });
 
@@ -666,7 +677,7 @@
                                 $.ajax({
                                     url: `${API_BASE.replace('/markets','')}/stalls/${stallId}?force=true`, type: 'DELETE',
                                     success: function(resp2) { $stall.remove(); delete changedStalls[stallId]; Swal.fire('Đã xóa (force)', resp2?.message || '', 'success'); },
-                                    error: function(xhr2) { Swal.fire('Lỗi', xhr2.responseText || 'Xóa cưỡng chế thất bại', 'error'); }
+                                    error: function(xhr2) { Swal.fire('Lỗi', xhr2.responseJSON?.message || xhr2.responseText || 'Xóa cưỡng chế thất bại', 'error'); }
                                 });
                             });
                         } else { Swal.fire('Lỗi', msg, 'error'); }

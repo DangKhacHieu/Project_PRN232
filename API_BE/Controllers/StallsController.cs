@@ -35,7 +35,7 @@ namespace API_BE.Controllers
 		public async Task<IActionResult> GetStallDetails(int id)
 		{
 			var stall = await _marketService.GetStallDetailsAsync(id);
-			if (stall == null) return NotFound("Không tìm thấy sạp.");
+			if (stall == null) return NotFound(new { message = "Không tìm thấy sạp." });
 			return Ok(stall);
 		}
 
@@ -47,7 +47,7 @@ namespace API_BE.Controllers
 			return Ok(new { message = "Cập nhật tọa độ sạp thành công!" });
 		}
 
-		[HttpGet("search/{marketId}")]	
+		[HttpGet("search/{marketId}")]
 		public async Task<IActionResult> SearchStallsOnMap(int marketId, [FromQuery] string? q, [FromQuery] string? status)
 		{
 			try
