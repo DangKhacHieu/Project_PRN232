@@ -26,6 +26,37 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+
+                    <ul class="navbar-nav align-items-center">
+                        @if (Context.Request.Cookies["VendorAuth"] != null)
+                        {
+                            <li class="nav-item me-2">
+                                <a class="nav-link p-0 d-flex align-items-center" asp-controller="Vendor" asp-action="Profile" title="Profile">
+                                    <span class="nav-avatar" aria-hidden="true">
+                                        <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" class="w-100 h-100" role="img" aria-label="avatar">
+                                            <circle cx="18" cy="18" r="18" fill="#6c757d" />
+                                            <text x="50%" y="54%" text-anchor="middle" fill="white" font-size="18" font-family="Arial" dy=".3em">V</text>
+                                        </svg>
+                                    </span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn nav-logout-btn">Logout</button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
+                            </li>
+                        }
+                    </ul>
                 </div>
             </div>
         </nav>

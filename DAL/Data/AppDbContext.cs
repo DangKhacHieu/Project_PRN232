@@ -37,6 +37,7 @@ namespace DAL.Data
         // 6. Support System
         public DbSet<SupportTicket> SupportTickets { get; set; }
         public DbSet<TicketImage> TicketImages { get; set; }
+        public DbSet<ChangePasswordOtp> ChangePasswordOtps { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -93,6 +94,7 @@ namespace DAL.Data
             modelBuilder.Entity<Product>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
             modelBuilder.Entity<PriceHistory>().Property(e => e.EffectiveTime).HasDefaultValueSql("GETDATE()");
             modelBuilder.Entity<SupportTicket>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<ChangePasswordOtp>().Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
             // --- Cấu hình DEFAULT TEXT / BOOLEAN ---
             modelBuilder.Entity<User>().Property(e => e.IsActive).HasDefaultValue(true);

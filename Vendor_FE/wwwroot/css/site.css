@@ -20,3 +20,38 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* NAV avatar + logout styling */
+.nav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  background: #6c757d;
+}
+
+.nav-avatar svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-logout-btn {
+  color: #6c757d;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1;
+  border-radius: 0.25rem;
+}
+
+.nav-logout-btn:hover,
+.nav-logout-btn:focus {
+  color: #212529;
+  text-decoration: none;
+  background-color: rgba(0,0,0,0.03);
+}
