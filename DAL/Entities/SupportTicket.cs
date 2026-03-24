@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -44,6 +44,5 @@ namespace DAL.Entities
         public const string Pending = "PENDING";
         public const string Processing = "PROCESSING";
         public const string Resolved = "RESOLVED"; 
-        public const string Closed = "CLOSED";    
     }
 }

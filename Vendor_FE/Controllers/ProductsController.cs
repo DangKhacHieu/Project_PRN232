@@ -17,6 +17,7 @@ namespace Vendor_FE.Controllers
         // GET: Products
         public async Task<IActionResult> Index(int? categoryId, bool? isActive, string? search)
         {
+            AddToken();
             var queryParams = new List<string>();
             if (categoryId.HasValue) queryParams.Add($"categoryId={categoryId.Value}");
             if (isActive.HasValue) queryParams.Add($"isActive={isActive.Value}");
@@ -42,6 +43,7 @@ namespace Vendor_FE.Controllers
 
         private async Task<Dictionary<int, string>> GetCategoriesAsync()
         {
+            AddToken();
             var response = await _client.GetAsync("/api/Products/categories");
             var categories = new Dictionary<int, string>();
             if (response.IsSuccessStatusCode)
@@ -71,6 +73,7 @@ namespace Vendor_FE.Controllers
         {
             if (!ModelState.IsValid) return View(request);
 
+            AddToken();
             using var content = new MultipartFormDataContent();
             content.Add(new StringContent(request.ProductName), "ProductName");
             content.Add(new StringContent(request.CategoryId.ToString()), "CategoryId");
@@ -97,6 +100,7 @@ namespace Vendor_FE.Controllers
         // GET: Products/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
+            AddToken();
             var response = await _client.GetAsync("/api/Products");
             if (response.IsSuccessStatusCode)
             {
@@ -127,6 +131,7 @@ namespace Vendor_FE.Controllers
         {
             if (!ModelState.IsValid) return View(request);
 
+            AddToken();
             using var content = new MultipartFormDataContent();
             content.Add(new StringContent(request.ProductName), "ProductName");
             if (request.CategoryId.HasValue) content.Add(new StringContent(request.CategoryId.ToString()), "CategoryId");
@@ -155,8 +160,18 @@ namespace Vendor_FE.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
+            AddToken();
             await _client.DeleteAsync($"/api/Products/{id}");
             return RedirectToAction(nameof(Index));
+        }
+
+        private void AddToken()
+        {
+            var token = Request.Cookies["VendorAuth"];
+            if (!string.IsNullOrEmpty(token))
+            {
+                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
         }
     }
 }

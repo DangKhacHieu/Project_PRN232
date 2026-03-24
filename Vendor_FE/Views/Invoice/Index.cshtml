@@ -5,6 +5,15 @@
 
 <div class="container-fluid py-4 max-w-1200">
 
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="fa-solid fa-circle-exclamation me-2"></i>
+            <strong>Lỗi thanh toán:</strong> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold mb-0 text-primary">
             <i class="fa-solid fa-file-invoice-dollar me-2"></i>Hóa Đơn Dịch Vụ
@@ -34,16 +43,21 @@
                         foreach (var item in Model)
                         {
                             var isPaid = item.Status == "PAID";
+                            var isPending = item.Status == "PENDING";
                             var dateDisplay = item.Month > 0 && item.Year > 0 ? $"{item.Month}/{item.Year}" : item.CreatedAt.ToString("MM/dd/yyyy");
 
                             <tr class="border-bottom">
                                 <td class="py-3 px-4 fw-bold text-start">#HD-@item.InvoiceId.ToString("D6")</td>
                                 <td class="py-3 text-muted">@dateDisplay</td>
-                                <td class="py-3 fw-bold text-end @(isPaid ? "text-success" : "text-danger")">@item.TotalAmount.ToString("N0") đ</td>
-                                
+                                <td class="py-3 fw-bold text-end @(isPaid ? "text-success" : (isPending ? "text-primary" : "text-danger"))">@item.TotalAmount.ToString("N0") đ</td>
+
                                 @if (isPaid)
                                 {
                                     <td class="py-3"><span class="badge bg-success px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-check me-1"></i> Đã thanh toán</span></td>
+                                }
+                                else if (isPending)
+                                {
+                                    <td class="py-3"><span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-spinner fa-spin me-1"></i> Chờ xác nhận</span></td>
                                 }
                                 else
                                 {
@@ -52,12 +66,12 @@
 
                                 <td class="py-3 px-4 text-end">
                                     <a href="/Invoice/Details/@item.InvoiceId" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2 hover-lift"><i class="fa-solid fa-eye me-1"></i>Chi tiết</a>
-                                    
+
                                     @if (isPaid)
                                     {
                                         <a href="/Invoice/ExportPdf/@item.InvoiceId" class="btn btn-sm btn-outline-secondary rounded-pill px-3 hover-lift"><i class="fa-solid fa-file-pdf me-1"></i>Tải PDF</a>
                                     }
-                                    else
+                                    else if (!isPending)
                                     {
                                         <a href="/Invoice/PayWithMomo/@item.InvoiceId"
                                            class="btn btn-sm rounded-pill px-3 hover-lift"

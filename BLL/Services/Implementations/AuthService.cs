@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
@@ -50,12 +50,13 @@ namespace BLL.Services.Implementations
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
                 new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
+                new Claim(ClaimTypes.Role, user.Role?.RoleName ?? string.Empty),
                 new Claim("role", user.Role?.RoleName ?? string.Empty),
                 new Claim("role_id", user.RoleId.ToString())
             };
 
             if (user.VendorProfile != null)
-                claims.Add(new Claim("vendor_id", user.VendorProfile.VendorId.ToString()));
+                claims.Add(new Claim("VendorId", user.VendorProfile.VendorId.ToString()));
 
             var keyBytes = Encoding.UTF8.GetBytes(key);
             var credentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256);
@@ -78,7 +79,6 @@ namespace BLL.Services.Implementations
                 FullName = user.FullName,
                 Role = user.Role?.RoleName,
                 RoleId = user.RoleId
-
             };
         }
 

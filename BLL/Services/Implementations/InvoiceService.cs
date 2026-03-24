@@ -201,7 +201,7 @@ namespace BLL.Services.Implementations
         public async Task<bool> ClearDebtAsync(int invoiceId, PaymentConfirmationDTO payment)
         {
             var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.InvoiceId == invoiceId);
-            if (invoice == null || invoice.Status == "PAID") return false;
+            if (invoice == null || invoice.Status == "PAID" || invoice.Status == "PENDING") return false;
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -218,7 +218,8 @@ namespace BLL.Services.Implementations
                 };
 
                 await _paymentRepo.AddAsync(newPayment);
-                invoice.Status = "PAID";
+                // Đổi thành PENDING theo yêu cầu để chờ Admin xác nhận
+                invoice.Status = "PENDING";
                 _context.Invoices.Update(invoice);
                 await _context.SaveChangesAsync();
 
@@ -273,44 +274,67 @@ namespace BLL.Services.Implementations
 
         public async Task<string?> GenerateMomoPaymentUrlAsync(int invoiceId, decimal amount, MomoPaymentConfig config)
         {
+            long amountLong = (long)amount;
+            string orderId = $"HD{invoiceId}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            string requestId = Guid.NewGuid().ToString();
+            string extraData = invoiceId.ToString();
+            string orderInfo = $"Thanh toan hoa don {invoiceId}";
+            string requestType = "captureWallet";
+
+            // Signature: các field PHẢI theo đúng thứ tự alphabetical và KHỚP với request body
+            // Format of signature: accessKey={accessKey}&amount={amount}&extraData={extraData}&ipnUrl={ipnUrl}&orderId={orderId}&orderInfo={orderInfo}&partnerCode={partnerCode}&redirectUrl={redirectUrl}&requestId={requestId}&requestType={requestType}
+            string rawSignature = $"accessKey={config.AccessKey}&amount={amountLong}&extraData={extraData}&ipnUrl={config.CallbackUrl}&orderId={orderId}&orderInfo={orderInfo}&partnerCode={config.PartnerCode}&redirectUrl={config.ReturnUrl}&requestId={requestId}&requestType={requestType}";
+            string signature = ComputeHmacSha256(rawSignature, config.SecretKey);
+
+            var requestData = new
+            {
+                partnerCode = config.PartnerCode,
+                partnerName = "Smart Market",
+                storeId = config.PartnerCode,
+                requestId,
+                amount = amountLong,
+                orderId,
+                orderInfo,
+                redirectUrl = config.ReturnUrl,
+                ipnUrl = config.CallbackUrl,
+                lang = "vi",
+                requestType,
+                autoCapture = true,
+                extraData,
+                signature
+            };
+
             try
             {
-                long amountLong = (long)amount; // MoMo yêu cầu số nguyên, không chấp nhận decimal
-                string orderId = Guid.NewGuid().ToString();
-                string requestId = Guid.NewGuid().ToString();
-                string extraData = invoiceId.ToString();
-                string orderInfo = $"Thanh toan HD {invoiceId}";
-
-                // Signature phải dùng amountLong để khớp với request body
-                string rawSignature = $"accessKey={config.AccessKey}&amount={amountLong}&extraData={extraData}&ipnUrl={config.CallbackUrl}&orderId={orderId}&orderInfo={orderInfo}&partnerCode={config.PartnerCode}&redirectUrl={config.ReturnUrl}&requestId={requestId}&requestType=captureWallet";
-                string signature = ComputeHmacSha256(rawSignature, config.SecretKey);
-
-                var requestData = new
-                {
-                    partnerCode = config.PartnerCode,
-                    requestId,
-                    amount = amountLong,  // long, không phải decimal
-                    orderId,
-                    orderInfo,
-                    redirectUrl = config.ReturnUrl,
-                    ipnUrl = config.CallbackUrl,
-                    requestType = "captureWallet",
-                    extraData,
-                    lang = "vi",          // bắt buộc với MoMo API v2
-                    signature
-                };
-
                 using var client = new System.Net.Http.HttpClient();
                 var response = await client.PostAsJsonAsync(config.MomoApiUrl, requestData);
                 var resBody = await response.Content.ReadFromJsonAsync<System.Text.Json.Nodes.JsonObject>();
-                if (response.IsSuccessStatusCode)
+
+                var resultCode = resBody?["resultCode"]?.GetValue<int>();
+                if (resultCode == 0)
                 {
                     return resBody?["payUrl"]?.ToString();
                 }
-                return null;
+
+                // MoMo từ chối - ném exception với thông tin chi tiết để controller có thể trả về client
+                var momoMessage = resBody?["message"]?.ToString() ?? "No message";
+                var momoLocalMsg = resBody?["localMessage"]?.ToString() ?? "";
+                // Dùng InvalidOperationException để sau đó re-throw khỏi network exception catch
+                throw new InvalidOperationException($"MoMo lỗi (resultCode={resultCode}): {momoMessage}. {momoLocalMsg}");
             }
-            catch { return null; }
+            catch (InvalidOperationException)
+            {
+                // Re-throw MoMo business errors để controller xử lý
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Chỉ nuốt lỗi network/IO
+                System.Console.WriteLine($"[MoMo Network Exception] {ex.Message}");
+                throw new InvalidOperationException($"Không kết nối được MoMo API: {ex.Message}");
+            }
         }
+
 
         public async Task<bool> ProcessMomoWebhookAsync(MomoWebhookRequestDTO request, MomoPaymentConfig config)
         {

@@ -26,7 +26,7 @@ namespace API_BE.Controllers
             if (momoConfig == null) return StatusCode(500, "Momo configuration is missing");
 
             bool result = await _invoiceService.ProcessMomoWebhookAsync(request, momoConfig);
-            
+
             if (result)
             {
                 return NoContent(); // 204 No Content for successful webhook processing

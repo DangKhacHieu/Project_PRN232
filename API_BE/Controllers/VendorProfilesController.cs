@@ -1,3 +1,4 @@
+
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -6,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using DAL.Data;
 using BLL.Models;
+using Microsoft.AspNetCore.Authorization;
+using System.Linq;
 
 namespace API_BE.Controllers
 {
@@ -83,6 +86,26 @@ namespace API_BE.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Updated", cover = vp.CoverImageUrl });
+        }
+
+        [HttpGet("my-profile")]
+        [Authorize(Roles = "Vendor")]
+        public async Task<ActionResult<VendorProfileDTO>> GetMyProfile()
+        {
+            var claim = User.Claims.FirstOrDefault(c => c.Type.Equals("VendorId", StringComparison.OrdinalIgnoreCase) || c.Type.Equals("vendor_id", StringComparison.OrdinalIgnoreCase));
+            int vendorId = claim != null ? int.Parse(claim.Value) : 0;
+            if (vendorId <= 0) return Unauthorized();
+            return await GetVendorProfile(vendorId);
+        }
+
+        [HttpPut("description")]
+        [Authorize(Roles = "Vendor")]
+        public async Task<IActionResult> UpdateMyProfile([FromForm] VendorProfileUpdateModel model)
+        {
+            var claim = User.Claims.FirstOrDefault(c => c.Type.Equals("VendorId", StringComparison.OrdinalIgnoreCase) || c.Type.Equals("vendor_id", StringComparison.OrdinalIgnoreCase));
+            int vendorId = claim != null ? int.Parse(claim.Value) : 0;
+            if (vendorId <= 0) return Unauthorized();
+            return await UpdateVendorProfile(vendorId, model);
         }
 
         public class VendorProfileUpdateModel

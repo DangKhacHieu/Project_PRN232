@@ -4,6 +4,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
@@ -13,6 +15,7 @@ using iText.IO.Font;
 using Microsoft.AspNetCore.Hosting;
 using Vendor_FE.DTOs;
 using System.Net.Http.Headers;
+using System;
 
 namespace Vendor_FE.Controllers
 {
@@ -27,13 +30,22 @@ namespace Vendor_FE.Controllers
             _env = env;
         }
 
-        public async Task<IActionResult> Index()
+        // Hàm tiện ích hỗ trợ gắn Token vào HttpClient (Lấy từ đoạn code 2)
+        private bool AddToken(HttpClient client)
         {
             var token = Request.Cookies["VendorAuth"];
-            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Account");
+            if (string.IsNullOrEmpty(token)) return false;
 
-            var client = _httpClientFactory.CreateClient("BackendAPI");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            return true;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var client = _httpClientFactory.CreateClient("BackendAPI");
+
+            // Sử dụng hàm AddToken cho gọn
+            if (!AddToken(client)) return RedirectToAction("Login", "Account");
 
             var response = await client.GetAsync("api/Invoices");
             var invoices = new List<InvoiceResponseDTO>();
@@ -48,11 +60,9 @@ namespace Vendor_FE.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
-            var token = Request.Cookies["VendorAuth"];
-            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Account");
-
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            if (!AddToken(client)) return RedirectToAction("Login", "Account");
 
             var response = await client.GetAsync($"api/Invoices/{id}/details");
             if (!response.IsSuccessStatusCode) return RedirectToAction(nameof(Index));
@@ -60,7 +70,7 @@ namespace Vendor_FE.Controllers
             var jsonStr = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var invoiceDetail = JsonSerializer.Deserialize<InvoiceDetailExportDTO>(jsonStr, options);
-            
+
             if (invoiceDetail == null) return RedirectToAction(nameof(Index));
 
             return View(invoiceDetail);
@@ -69,11 +79,9 @@ namespace Vendor_FE.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportPdf(int id)
         {
-            var token = Request.Cookies["VendorAuth"];
-            if (string.IsNullOrEmpty(token)) return RedirectToAction("Login", "Account");
-
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            if (!AddToken(client)) return RedirectToAction("Login", "Account");
 
             var response = await client.GetAsync($"api/Invoices/{id}/details");
             if (!response.IsSuccessStatusCode)
@@ -81,7 +89,6 @@ namespace Vendor_FE.Controllers
 
             var jsonString = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
             var invoiceDetail = JsonSerializer.Deserialize<InvoiceDetailExportDTO>(jsonString, options);
 
             using (var memoryStream = new MemoryStream())
@@ -114,7 +121,6 @@ namespace Vendor_FE.Controllers
                         .SetTextAlignment(TextAlignment.LEFT)
                 );
 
-                // Draw a simple border line
                 Table lineTable = new Table(1).UseAllAvailableWidth().SetMarginTop(5).SetMarginBottom(15);
                 lineTable.AddCell(new Cell().SetBorderTop(new iText.Layout.Borders.SolidBorder(lightGray, 1f)).SetBorderBottom(iText.Layout.Borders.Border.NO_BORDER).SetBorderLeft(iText.Layout.Borders.Border.NO_BORDER).SetBorderRight(iText.Layout.Borders.Border.NO_BORDER));
                 document.Add(lineTable);
@@ -129,7 +135,7 @@ namespace Vendor_FE.Controllers
 
                 // ===== INFO TABLE =====
                 Table infoTable = new Table(UnitValue.CreatePercentArray(new float[] { 1, 1 })).UseAllAvailableWidth().SetMarginBottom(20);
-                
+
                 Cell cellLeft = new Cell().SetBorder(iText.Layout.Borders.Border.NO_BORDER);
                 cellLeft.Add(new Paragraph($"Mã hóa đơn: HD-{invoiceDetail.InvoiceId:D6}").SetFont(boldFont));
                 cellLeft.Add(new Paragraph($"Khách hàng: {invoiceDetail.BusinessName}"));
@@ -144,8 +150,7 @@ namespace Vendor_FE.Controllers
 
                 // ===== MAIN TABLE =====
                 Table table = new Table(UnitValue.CreatePercentArray(new float[] { 1, 4, 1.5f, 2, 2.5f })).UseAllAvailableWidth();
-                
-                // HEADER TABLE
+
                 table.AddHeaderCell(new Cell().SetBackgroundColor(primaryBlue).SetFontColor(iText.Kernel.Colors.ColorConstants.WHITE).Add(new Paragraph("STT").SetFont(boldFont).SetTextAlignment(TextAlignment.CENTER)));
                 table.AddHeaderCell(new Cell().SetBackgroundColor(primaryBlue).SetFontColor(iText.Kernel.Colors.ColorConstants.WHITE).Add(new Paragraph("Nội dung phí").SetFont(boldFont).SetTextAlignment(TextAlignment.CENTER)));
                 table.AddHeaderCell(new Cell().SetBackgroundColor(primaryBlue).SetFontColor(iText.Kernel.Colors.ColorConstants.WHITE).Add(new Paragraph("Số lượng").SetFont(boldFont).SetTextAlignment(TextAlignment.CENTER)));
@@ -192,6 +197,7 @@ namespace Vendor_FE.Controllers
             }
         }
 
+        // ==================== THÊM CÁC HÀM MOMO TỪ ĐOẠN 1 ====================
         [HttpGet]
         public async Task<IActionResult> PayWithMomo(int id)
         {
@@ -204,7 +210,8 @@ namespace Vendor_FE.Controllers
             var response = await client.GetAsync($"api/Invoices/{id}/momo-payment");
             if (!response.IsSuccessStatusCode)
             {
-                TempData["Error"] = "Không thể tạo link thanh toán MoMo. Vui lòng thử lại!";
+                var errorBody = await response.Content.ReadAsStringAsync();
+                TempData["Error"] = $"Lỗi API ({(int)response.StatusCode}): {errorBody}";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -220,7 +227,7 @@ namespace Vendor_FE.Controllers
             if (!string.IsNullOrEmpty(momoUrl))
                 return Redirect(momoUrl);
 
-            TempData["Error"] = "Không nhận được link thanh toán MoMo.";
+            TempData["Error"] = $"MoMo không trả về link thanh toán. Response: {jsonStr}";
             return RedirectToAction(nameof(Index));
         }
 

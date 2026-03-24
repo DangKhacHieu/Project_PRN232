@@ -20,8 +20,8 @@ namespace Vendor_FE.Controllers
         public async Task<IActionResult> Index()
         {
             var client = _httpClientFactory.CreateClient("BackendAPI");
-            var token = Request.Headers["Authorization"].ToString();
-            if (!string.IsNullOrEmpty(token)) client.DefaultRequestHeaders.Add("Authorization", token);
+            var token = Request.Cookies["VendorAuth"];
+            if (!string.IsNullOrEmpty(token)) client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             int totalProducts = 0;
             int unpaidInvoicesCount = 0;

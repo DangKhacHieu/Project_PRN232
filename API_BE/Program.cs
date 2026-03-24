@@ -29,6 +29,12 @@ using QuestPDF.Infrastructure;
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 var builder = WebApplication.CreateBuilder(args);
 
+// CRITICAL: Disable ASP.NET Core's default JWT claim name remapping.
+// Without this, claim names like "VendorId" and "role" get transformed into
+// long Microsoft URI strings, making User.Claims.FirstOrDefault(c => c.Type == "VendorId") always return null.
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+
 // --- 1. CONFIG CONTROLLERS & JSON ---
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -39,7 +45,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDistributedMemoryCache();
 
-// --- 2. DATABASE CONNECTION ---
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// --- 2. CONFIG DATABASE ---
+
 var connectionString = builder.Configuration.GetConnectionString("AppDbContext");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -65,11 +75,19 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMarketRepository, MarketRepository>();
 builder.Services.AddScoped<IVendorRepository, VendorRepository>();
 builder.Services.AddScoped<IVendorProfileRepository, VendorProfileRepository>();
+
+builder.Services.AddScoped<IVendorProfileService, VendorProfileService>();
+
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
 
-// Đăng ký các Repository còn thiếu mà InvoiceService đang gọi:
+
+// Finance/Admin Dependencies
+builder.Services.AddScoped<IUtilityReadingRepository, UtilityReadingRepository>();
+builder.Services.AddScoped<IUtilityReadingService, UtilityReadingService>();
+builder.Services.AddScoped<IFeeConfigRepository, FeeConfigRepository>();
+
 builder.Services.AddScoped<IStallContractRepository, StallContractRepository>();
 builder.Services.AddScoped<IUtilityReadingRepository, UtilityReadingRepository>();
 builder.Services.AddScoped<IFeeConfigRepository, FeeConfigRepository>();

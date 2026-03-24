@@ -13,7 +13,7 @@ namespace API_BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-     [Authorize]
+    [Authorize]
     public class InvoicesController : ControllerBase
     {
         private readonly IInvoiceService _invoiceService;
@@ -175,9 +175,18 @@ namespace API_BE.Controllers
             var momoConfig = config.GetSection("MomoPaymentConfig").Get<BLL.DTOs.MomoPaymentConfig>();
             if (momoConfig == null) return StatusCode(500, "Momo configuration is missing.");
 
-            var url = await _invoiceService.GenerateMomoPaymentUrlAsync(id, invoice.TotalAmount, momoConfig);
-            if (url == null) return BadRequest(new { Message = "Could not generate Momo URL. Check API logs.", TotalAmount = invoice.TotalAmount });
-            return Ok(new { Url = url });
+            try
+            {
+                var url = await _invoiceService.GenerateMomoPaymentUrlAsync(id, invoice.TotalAmount, momoConfig);
+                if (string.IsNullOrEmpty(url))
+                    return BadRequest(new { Message = "MoMo trả về URL rỗng." });
+                return Ok(new { Url = url });
+            }
+            catch (Exception ex)
+            {
+                // ex.Message chứa MoMo resultCode và message thật sự
+                return BadRequest(new { Message = ex.Message });
+            }
         }
         [HttpPost("momo-webhook")]
         [AllowAnonymous]
