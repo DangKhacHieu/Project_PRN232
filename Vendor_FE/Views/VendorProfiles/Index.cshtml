@@ -3,12 +3,13 @@
     ViewData["Title"] = "Hồ Sơ Cửa Hàng";
 }
 
-<div class="container-fluid py-4 max-w-1000">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0 text-primary">
-            <i class="fa-solid fa-store me-2"></i>Hồ Sơ Cửa Hàng
-        </h2>
-    </div>
+<div class="container-fluid py-4">
+    <div class="max-w-1000 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold mb-0 text-primary">
+                <i class="fa-solid fa-store me-2"></i>Hồ Sơ Cửa Hàng
+            </h2>
+        </div>
 
     <form id="profileForm" method="post" action="/VendorProfiles/Index" enctype="multipart/form-data">
         <div class="card shadow border-0 rounded-4 overflow-hidden mb-5">
@@ -87,12 +88,15 @@
         const form = document.getElementById('profileForm');
         const errorContainer = document.getElementById('validation-errors');
 
-        fileInput.addEventListener('change', function (e) {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    preview.src = event.target.result;
+        if (fileInput && preview) {
+            fileInput.addEventListener('change', function (e) {
+                const file = this.files && this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        preview.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
                 }
                 reader.readAsDataURL(file);
             }

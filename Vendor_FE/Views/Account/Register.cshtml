@@ -1,0 +1,148 @@
+﻿@model Vendor_FE.Models.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Đăng ký";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Smart Market</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-card auth-card-wide shadow-lg">
+            <div class="text-center mb-4">
+                <div class="brand-icon mb-3">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <h2 class="fw-bold mb-2">Tạo tài khoản Nhà Bán</h2>
+                <p class="text-muted mb-0">Đăng ký cửa hàng của bạn để tham gia Smart Market</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model?.Error))
+            {
+                <div class="alert alert-danger">@Model.Error</div>
+            }
+
+            <form asp-action="Register" method="post" class="row g-3">
+                @Html.AntiForgeryToken()
+
+                <div class="col-md-6">
+                    <label asp-for="FullName" class="form-label fw-semibold">Họ và tên</label>
+                    <input asp-for="FullName" class="form-control auth-control" placeholder="Nhập họ và tên" />
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="BusinessName" class="form-label fw-semibold">Tên cửa hàng</label>
+                    <input asp-for="BusinessName" class="form-control auth-control" placeholder="Nhập tên cửa hàng" />
+                    <span asp-validation-for="BusinessName" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                    <input asp-for="Email" class="form-control auth-control" placeholder="Nhập email" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Phone" class="form-label fw-semibold">Số điện thoại</label>
+                    <input asp-for="Phone" class="form-control auth-control" placeholder="Nhập số điện thoại" />
+                    <span asp-validation-for="Phone" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Password" class="form-label fw-semibold">Mật khẩu</label>
+                    <input asp-for="Password" type="password" class="form-control auth-control" placeholder="Tạo mật khẩu" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12 d-grid mt-2">
+                    <button type="submit" class="btn btn-success btn-lg auth-btn">Đăng ký</button>
+                </div>
+
+                <div class="col-12 text-center">
+                    <small class="text-muted">
+                        Đã có tài khoản?
+                        <a asp-controller="Account" asp-action="Login" class="text-decoration-none fw-semibold">Đăng nhập</a>
+                    </small>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #eef4ff 0%, #f8fbff 45%, #eef2f7 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 460px;
+            background: #fff;
+            border: 0;
+            border-radius: 24px;
+            padding: 36px 32px;
+        }
+
+        .auth-card-wide {
+            max-width: 760px;
+        }
+
+        .brand-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #198754, #40b67a);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 12px 28px rgba(25, 135, 84, 0.22);
+        }
+
+        .auth-control {
+            height: 52px;
+            border-radius: 14px;
+        }
+
+        .auth-btn {
+            border-radius: 14px;
+            font-weight: 600;
+            height: 54px;
+        }
+
+        @@media (max-width: 576px) {
+            .auth-card {
+                padding: 28px 20px;
+                border-radius: 20px;
+            }
+        }
+    </style>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>

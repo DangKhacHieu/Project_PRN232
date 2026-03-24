@@ -8,12 +8,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+    <style>
+        /* small header tweaks */
+        .topbar { height: 73px; align-items: center; }
+        .page-title { font-weight: 600; margin: 0 0 0 12px; }
+        .nav-actions a { margin-left: 12px; }
+        /* keep content scrollable and avoid full-height clipping */
+        #page-content-wrapper { min-height: 100vh; }
+    </style>
 </head>
-<body class="bg-light" style="overflow: hidden; height: 100vh;">
-    <div class="d-flex w-100 h-100" id="wrapper">
+<body class="bg-light">
+    <div class="d-flex w-100" id="wrapper">
         <!-- Sidebar -->
         <div class="bg-dark text-white shadow-sm" id="sidebar-wrapper">
-            <!-- Branding Header perfectly aligned with Top Navbar -->
             <div class="sidebar-heading d-flex align-items-center justify-content-center fs-5 fw-bold text-uppercase border-bottom border-secondary m-0" style="height: 73px;">
                 <i class="fa-solid fa-store me-2 text-warning"></i>Smart Market
             </div>
@@ -35,49 +42,58 @@
                 </a>
             </div>
         </div>
-        
+
         <!-- Page Content -->
-        <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column h-100" style="overflow-y: auto; overflow-x: hidden;">
-            <!-- Top Nav -->
-            <nav class="navbar navbar-expand-lg navbar-white bg-white border-bottom shadow-sm px-4 m-0" style="height: 73px; flex-shrink: 0;">
-                <button class="btn btn-outline-secondary rounded-circle d-flex justify-content-center align-items-center" id="menu-toggle" style="width: 40px; height: 40px; padding: 0;">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
-                <div class="ms-auto d-flex align-items-center">
-                    <div class="dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center text-dark text-decoration-none" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="https://ui-avatars.com/api/?name=Vendor&background=0D8ABC&color=fff" class="rounded-circle shadow-sm me-2" alt="Avatar" width="38" height="38">
-                            <span class="fw-bold fs-6">A12-Vendor</span>
+        <div id="page-content-wrapper" class="flex-grow-1 d-flex flex-column" style="overflow-y: auto; overflow-x: hidden;">
+            <!-- Top Header -->
+            <nav class="navbar navbar-expand-lg navbar-white bg-white border-bottom shadow-sm px-4 topbar" role="navigation">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-outline-secondary rounded-circle d-flex justify-content-center align-items-center me-2" id="menu-toggle" style="width: 40px; height: 40px; padding: 0;">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h5 class="page-title mb-0">@ViewData["Title"]</h5>
+                </div>
+
+                <div class="ms-auto d-flex align-items-center nav-actions">
+                    @if (Context.Request.Cookies["VendorAuth"] != null)
+                    {
+                        <a class="btn btn-outline-secondary me-2" asp-controller="Vendor" asp-action="Profile" title="Profile">
+                            <i class="fa-solid fa-user"></i> Hồ sơ
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item py-2" href="/VendorProfiles/Index"><i class="fa-regular fa-user me-2 text-muted"></i>Tài khoản</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item py-2 text-danger" href="#"><i class="fa-solid fa-right-from-bracket me-2"></i>Đăng xuất</a></li>
-                        </ul>
-                    </div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-link text-decoration-none">Đăng xuất</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a class="btn btn-outline-primary" asp-controller="Account" asp-action="Login">Login</a>
+                        <a class="btn btn-primary ms-2" asp-controller="Account" asp-action="Register">Register</a>
+                    }
                 </div>
             </nav>
 
-            <!-- Main Content Area -->
-            <div class="container-fluid p-4 main-content flex-grow-1">
-                @RenderBody()
+            <div class="container py-3">
+                <main role="main" class="pb-3">
+                    @RenderBody()
+                </main>
             </div>
-            
-            <footer class="footer text-muted py-3 text-center mt-auto border-top bg-white" style="flex-shrink: 0;">
-                <div class="container">
-                    &copy; 2026 - Smart Market Vendor Portal v1.0
-                </div>
-            </footer>
         </div>
     </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - Vendor_FE - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        document.getElementById("menu-toggle").addEventListener("click", function (e) {
+        document.getElementById("menu-toggle")?.addEventListener("click", function (e) {
             e.preventDefault();
-            document.getElementById("wrapper").classList.toggle("toggled");
+            document.getElementById("wrapper")?.classList.toggle("toggled");
         });
 
         // Hàm hỗ trợ confirm chung toàn hệ thống
