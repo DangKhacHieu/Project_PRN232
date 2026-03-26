@@ -67,6 +67,7 @@ namespace API_BE.Controllers
         // 1. Lấy danh sách sự cố cho Admin
         // GET: api/Tickets/list
         [HttpGet("list")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetList()
         {
             var result = await _ticketService.GetAllTickets();
@@ -76,6 +77,7 @@ namespace API_BE.Controllers
         // 2. Cập nhật trạng thái sự cố
         // PUT: api/Tickets/update-status/{id}
         [HttpPut("update-status/{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] string newStatus)
         {
             var ticket = await _ticketService.GetTicketById(id);
@@ -104,6 +106,7 @@ namespace API_BE.Controllers
         // 3. Lấy chi tiết 1 sự cố (Nếu cần xem ảnh to hoặc nội dung dài)
         // GET: api/Tickets/{id}
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             var ticket = await _ticketService.GetTicketById(id);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BLL.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,8 +14,9 @@ namespace BLL.Models
         public string? BusinessName { get; set; }
         public string? Description { get; set; }
         public string? CoverImageUrl { get; set; }
-        public string? FullName { get; set; }
-
+        public string? OwnerName { get; set; }
+        public string? StallCode { get; set; }
+        public DateTime LastUpdated { get; set; }
 
         public string? Email { get; set; }
         public string? Phone { get; set; }

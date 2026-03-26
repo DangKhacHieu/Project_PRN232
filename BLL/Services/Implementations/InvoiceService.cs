@@ -218,15 +218,20 @@ namespace BLL.Services.Implementations
                 };
 
                 await _paymentRepo.AddAsync(newPayment);
-                // Đổi thành PENDING theo yêu cầu để chờ Admin xác nhận
-                invoice.Status = "PENDING";
+                // Admin xác nhận gạch nợ thành công thì trạng thái là PAID
+                invoice.Status = "PAID";
                 _context.Invoices.Update(invoice);
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
                 return true;
             }
-            catch { await transaction.RollbackAsync(); return false; }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                var msg = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                throw new Exception($"ClearDebt error: {msg}");
+            }
         }
 
         public async Task<string?> GenerateVietQRUrlAsync(int vendorId, int invoiceId)

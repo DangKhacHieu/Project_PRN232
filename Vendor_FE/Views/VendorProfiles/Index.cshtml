@@ -11,100 +11,150 @@
             </h2>
         </div>
 
-        <div class="card shadow border-0 rounded-4 overflow-hidden mb-5">
-            <!-- Cover Image Section -->
-            <div class="position-relative bg-light cover-wrapper">
-                <img id="coverPreview" src="@(Model?.CoverImageUrl ?? "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg")" class="w-100 h-100 object-fit-cover" alt="Cover Image">
-                
-                <!-- Nút đổi ảnh cover nổi trên hình -->
-                <button type="button" class="btn btn-light position-absolute cover-change-btn rounded-pill shadow fw-bold" onclick="document.getElementById('coverInput').click()">
-                    <i class="fa-solid fa-camera me-2"></i>Thay đổi ảnh bìa
-                </button>
-                <input type="file" id="coverInput" name="NewCoverImage" class="d-none" accept="image/*">
-            </div>
+        <form id="profileForm" method="post" action="/VendorProfiles/Index" enctype="multipart/form-data">
+            <div class="card shadow border-0 rounded-4 overflow-hidden mb-5">
 
-            <!-- Profile Detail Section -->
-            <div class="card-body p-4 p-md-5 position-relative">
-                <!-- Layout: title/metadata on left, actions on right -->
-                <div class="d-flex align-items-start justify-content-between gap-3 mb-3 profile-top">
-                    <div class="d-flex flex-column">
-                        <h3 class="mb-1 fw-bold profile-store">@Model?.BusinessName</h3>
-                        <div class="text-muted small">
-                            Owner: <span class="fw-medium">@Model?.OwnerName ?? "N/A"</span>
-                            <br />
-                            Vendor ID: <span class="fw-medium">@Model?.VendorId</span>
+                <div class="position-relative bg-light" style="height: 300px;">
+                    <img id="coverPreview" src="@(Model?.CoverImageUrl ?? "https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg")" class="w-100 h-100 object-fit-cover" alt="Cover Image">
+
+                    <button type="button" class="btn btn-light position-absolute bottom-0 end-0 m-4 rounded-pill shadow fw-bold hover-lift" onclick="document.getElementById('coverInput').click()">
+                        <i class="fa-solid fa-camera me-2"></i>Thay đổi ảnh bìa
+                    </button>
+                    <input type="file" id="coverInput" name="NewCoverImage" class="d-none" accept="image/*">
+                </div>
+
+                <div class="card-body p-4 p-md-5 position-relative">
+                    <div class="position-absolute top-0 start-0 translate-middle shadow-sm bg-white rounded-circle ms-5 d-flex justify-content-center align-items-center" style="width: 100px; height: 100px; margin-top: -50px; border: 4px solid white;">
+                        <i class="fa-solid fa-shop fa-3x text-primary"></i>
+                    </div>
+
+                    <div class="mt-4 mt-md-0" style="padding-top: 20px;">
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+                        }
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                        }
+
+                        <div id="validation-errors" class="alert alert-danger d-none"></div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="fa-solid fa-signature me-2"></i>Tên Gian Hàng <span class="text-danger">*</span></label>
+                                <input type="text" id="businessName" class="form-control form-control-lg rounded-3 bg-light" value="@Model?.BusinessName" name="BusinessName" required>
+                            </div>
+                            <div class="col-md-6 mt-3 mt-md-0">
+                                <label class="form-label fw-bold"><i class="fa-solid fa-id-card me-2"></i>Chủ Sở Hữu</label>
+                                <input type="text" class="form-control form-control-lg rounded-3" value="@Model?.OwnerName" disabled readonly>
+                                <div class="form-text"><i class="fa-solid fa-lock me-1"></i> Không thể thay đổi</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold"><i class="fa-solid fa-location-dot me-2"></i>Mã Gian Hàng (Vị trí)</label>
+                                <input type="text" class="form-control form-control-lg rounded-3" value="@(Model?.StallCode ?? "Chưa xếp chỗ")" disabled readonly>
+                                <div class="form-text"><i class="fa-solid fa-lock me-1"></i> Thông báo cho ban quản lý nếu mã gian hàng không chính xác</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold"><i class="fa-solid fa-circle-info me-2"></i>Mô Tả / Giới Thiệu Cửa Hàng</label>
+                            <textarea id="description" class="form-control rounded-3 bg-light" rows="5" name="Description" placeholder="Nhập một vài dòng giới thiệu gian hàng của bạn tới khách hàng...">@Model?.Description</textarea>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="row align-items-center">
+                            <div class="col-md-7 text-muted small">
+                                <i class="fa-solid fa-clock-rotate-left me-1"></i> Cập nhật lần cuối: @(Model?.LastUpdated != null && Model?.LastUpdated.Year > 2000 ? Model?.LastUpdated.ToString("dd/MM/yyyy HH:mm") : "Hôm qua lúc 14:30")
+                            </div>
+                            <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                                <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill fw-bold shadow hover-lift"><i class="fa-solid fa-floppy-disk me-2"></i>Lưu Thay Đổi</button>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="d-flex flex-column align-items-end gap-2 action-stack">
-                        <a href="/VendorProfiles/Edit/@Model?.VendorId" class="btn btn-outline-primary rounded-pill px-4">Edit Profile</a>
-                        <a href="/Account/RequestOtpEmail" class="btn btn-outline-secondary rounded-pill px-4">Change Password</a>
-                        <a href="/Products/Index" class="btn btn-primary rounded-pill px-4">Manage Products</a>
-                    </div>
-                </div>
-
-                <hr class="my-3" />
-
-                <div>
-                    <h5 class="fw-bold mb-3">Description</h5>
-                    <p class="text-muted mb-0">
-                        @(string.IsNullOrWhiteSpace(Model?.Description) ? "No description provided." : Model.Description)
-                    </p>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
-</div>
 
-<style>
-    .max-w-1000 { max-width: 1000px; margin: 0 auto; }
+    <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const fileInput = document.getElementById('coverInput');
+                const preview = document.getElementById('coverPreview');
+                const form = document.getElementById('profileForm');
+                const errorContainer = document.getElementById('validation-errors');
 
-    /* cover */
-    .object-fit-cover { object-fit: cover !important; }
-    .cover-wrapper { height: 160px; overflow: hidden; position: relative; border-bottom-left-radius: .5rem; border-bottom-right-radius: .5rem; }
-    @@media (min-width: 992px) {
-        .cover-wrapper { height: 180px; }
-    }
-
-    /* store title */
-    .profile-store { font-size: 1.5rem; margin-bottom: 0; }
-
-    /* actions */
-    .action-stack a { min-width: 180px; }
-    @@media (max-width: 767.98px) {
-        .action-stack { align-items: flex-start; }
-        .action-stack a { min-width: 140px; }
-        .profile-store { font-size: 1.2rem; }
-        .cover-wrapper { height: 140px; }
-    }
-
-    /* small visual tweaks */
-    .profile-top { margin-top: -28px; } /* pull content up slightly to sit under cover like screenshot */
-    .card-body { padding-top: 36px !important; } /* give room for pulled content */
-
-    .cover-change-btn { bottom: 1rem; right: 1rem; }
-    .hover-lift { transition: transform 0.18s, box-shadow 0.18s; }
-    .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.12)!important; }
-</style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const fileInput = document.getElementById('coverInput');
-        const preview = document.getElementById('coverPreview');
-        const form = document.getElementById('profileForm');
-        const errorContainer = document.getElementById('validation-errors');
-
-        if (fileInput && preview) {
-            fileInput.addEventListener('change', function (e) {
-                const file = this.files && this.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function (event) {
-                        preview.src = event.target.result;
-                    };
-                    reader.readAsDataURL(file);
+                if (fileInput && preview) {
+                    fileInput.addEventListener('change', function (e) {
+                        const file = this.files && this.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                preview.src = event.target.result;
+                            };
+        reader.readAsDataURL(file);
+                        }
+                    });
                 }
+
+                function countWords(str) {
+                    return str.trim().split(/\s+/).filter(word => word.length > 0).length;
+                }
+
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault(); // Prevent default submission to validate first
+
+                    const nameField = document.getElementById('businessName').value.trim();
+                    const descField = document.getElementById('description').value.trim();
+
+                    errorContainer.innerHTML = '';
+                    let errors = [];
+
+                    // 1. Kiểm tra null/empty
+                    if (!nameField) {
+                        errors.push("Tên gian hàng không được để trống.");
+                    }
+                    if (!descField) {
+                        errors.push("Mô tả cửa hàng không được để trống.");
+                    }
+
+                    // 2. Kiểm tra ký tự đặc biệt
+                    // Không cho phép các ký tự đặc biệt phổ biến trong cả tên và mô tả
+                    const specialCharPattern = /[!@@#$%^&*()_+=\[\]{};'"\\|<>\/?]+/;
+
+                    if (specialCharPattern.test(nameField)) {
+                        errors.push("Tên gian hàng không được chứa ký tự đặc biệt.");
+                    }
+                    if (specialCharPattern.test(descField)) {
+                        errors.push("Mô tả cửa hàng không được chứa ký tự đặc biệt.");
+                    }
+
+                    // 3. Kiểm tra số lượng từ
+                    const nameWordCount = countWords(nameField);
+                    const descWordCount = countWords(descField);
+
+                    if (nameWordCount > 20) {
+                        errors.push(`Tên gian hàng quá dài (${nameWordCount}/20 từ).`);
+                    }
+                    if (descWordCount > 200) {
+                        errors.push(`Mô tả cửa hàng quá dài (${descWordCount}/200 từ).`);
+                    }
+
+                    if (errors.length > 0) {
+                        errorContainer.innerHTML = "<strong>Vui lòng sửa các lỗi sau:</strong><ul>" + errors.map(err => `<li>${err}</li>`).join('') + "</ul>";
+                        errorContainer.classList.remove('d-none');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        return;
+                    } else {
+                        errorContainer.classList.add('d-none');
+                    }
+
+                    // 4. Thông báo xác nhận
+                    confirmAction(null, form, 'Lưu hồ sơ', 'Bạn có chắc chắn muốn lưu các thay đổi này không?', 'question', 'btn-primary');
+                });
             });
-        }
-    });
-</script>
+    </script>

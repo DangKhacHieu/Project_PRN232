@@ -1,4 +1,4 @@
-﻿using DAL.Entities;
+using DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DAL.Data
@@ -77,7 +77,7 @@ namespace DAL.Data
                 .ToTable(t => t.HasCheckConstraint("CK_Utility_Month", "month BETWEEN 1 AND 12"));
 
             modelBuilder.Entity<SupportTicket>()
-                .ToTable(t => t.HasCheckConstraint("CK_Ticket_Status", "status IN ('PENDING','PROCESSING','DONE')"));
+                .ToTable(t => t.HasCheckConstraint("CK_Ticket_Status", "status IN ('PENDING','PROCESSING','RESOLVED','CLOSED')"));
 
 
             // --- Cấu hình DEFAULT GETDATE() ---

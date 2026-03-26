@@ -1,4 +1,8 @@
-
+﻿using BLL.Models;
+using DAL.Data;
+using DAL.Entities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -29,9 +33,17 @@ namespace API_BE.Controllers
         {
             var vp = await _context.VendorProfiles
                                    .Include(v => v.User)
+                                   .Include(v => v.StallContracts)
+                                       .ThenInclude(sc => sc.Stall)
                                    .FirstOrDefaultAsync(v => v.VendorId == id);
 
             if (vp == null) return NotFound();
+
+            // Lấy hợp đồng đang ACTIVE để lấy StallCode
+            var activeContract = vp.StallContracts
+                .Where(sc => sc.Status == "ACTIVE")
+                .OrderByDescending(sc => sc.StartDate)
+                .FirstOrDefault();
 
             var dto = new VendorProfileDTO
             {
@@ -40,7 +52,9 @@ namespace API_BE.Controllers
                 BusinessName = vp.BusinessName,
                 Description = vp.Description,
                 CoverImageUrl = vp.CoverImageUrl,
-                FullName = vp.User?.FullName,
+                OwnerName = vp.User?.FullName,
+                StallCode = activeContract?.Stall?.StallCode,
+                LastUpdated = vp.CreatedAt ?? DateTime.Now,
                 // populate contact fields from related User
                 Email = vp.User?.Email,
                 Phone = vp.User?.Phone
